@@ -38,7 +38,8 @@ pub struct OrderKey {
     /// The main message.
     pub message: String,
     /// The rest of the diagnostic's content, each part as a string that holds no global position:
-    /// its span labels, its children, its suggestions, and its message arguments. Two diagnostics
+    /// its span labels, its children, its suggestions, its message arguments, its level, its lint,
+    /// its children's span labels, and its suggestions' styles and applicability. Two diagnostics
     /// with a span tie only when they print the same, so their order cannot change the output.
     pub detail: Vec<String>,
 }

@@ -5,7 +5,10 @@ use cargo_cgp_driver::emitter::{order_key, sort_canonically};
 use cargo_cgp_error_processing::byte_range::ByteRange;
 use cargo_cgp_error_processing::order::Spanless;
 use rustc_errors::codes::E0277;
-use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Subdiag, Sublevel};
+use rustc_errors::{
+    Applicability, CodeSuggestion, DiagInner, DiagMessage, Level, MultiSpan, Style, Subdiag,
+    Sublevel, Substitution, SubstitutionPart, SuggestionStyle, Suggestions,
+};
 use rustc_span::source_map::{FilePathMapping, SourceMap};
 use rustc_span::{BytePos, DUMMY_SP, FileName, Span, create_default_session_globals_then};
 
@@ -151,5 +154,94 @@ fn spanless_diagnostics_sort_by_content_in_a_batch_and_keep_their_order_at_the_f
             )),
             [r#"Str("an overflow")"#, r#"Str("a cycle")"#]
         );
+    });
+}
+
+/// The order of the two variants `make` builds, sorted in each arrival order, as the indices of
+/// the variants, with whether their keys differ.
+fn order_of(map: &SourceMap, make: impl Fn(bool) -> DiagInner) -> (Vec<bool>, Vec<bool>, bool) {
+    let first = |sorted: Vec<(bool, DiagInner)>| sorted.into_iter().map(|(v, _)| v).collect();
+    let sort = |items: Vec<(bool, DiagInner)>| {
+        sort_canonically(items, |(_, diag)| diag, map, Spanless::InArrivalOrder)
+    };
+    let one = first(sort(vec![(false, make(false)), (true, make(true))]));
+    let other = first(sort(vec![(true, make(true)), (false, make(false))]));
+    (
+        one,
+        other,
+        order_key(&make(false), map) != order_key(&make(true), map),
+    )
+}
+
+// Concern: two diagnostics at one span with one code and message print differently when they
+//   differ only in their level, in a child's secondary label, or in a suggestion's style or
+//   applicability, which the detail did not read, so a stable sort kept them in arrival order,
+//   which varies under threads.
+// Handled: `order_key`'s detail reads each of the four.
+// Property: for each of the four differences, the two diagnostics have different keys, and
+//   `sort_canonically` gives them one order in both arrival orders.
+#[test]
+fn diagnostics_that_differ_only_in_a_printed_part_sort_the_same_in_either_order() {
+    with_two_files(|map, span| {
+        let level = |warning: bool| {
+            let level = if warning {
+                Level::Warning(None)
+            } else {
+                Level::Error
+            };
+            let mut diag = DiagInner::new(level, "m");
+            diag.code = Some(E0277);
+            diag.span = MultiSpan::from_span(span(8, 17));
+            diag
+        };
+        let child_label = |labelled: bool| {
+            let mut diag = with_note(error("m", span(8, 17)), "required here");
+            let mut child_span = MultiSpan::from_span(span(8, 12));
+            if labelled {
+                child_span.push_span_label(span(13, 16), "this argument");
+            }
+            diag.children[0].span = child_span;
+            diag
+        };
+        let suggestion = |style: SuggestionStyle, applicability: Applicability| {
+            let mut diag = error("m", span(8, 17));
+            diag.suggestions = Suggestions::Enabled(vec![CodeSuggestion {
+                substitutions: vec![Substitution {
+                    parts: vec![SubstitutionPart {
+                        span: span(13, 16),
+                        snippet: "x".to_owned(),
+                    }],
+                }],
+                msg: DiagMessage::from("use `x`"),
+                style,
+                applicability,
+            }]);
+            diag
+        };
+        let style = |hidden: bool| {
+            let style = if hidden {
+                SuggestionStyle::HideCodeInline
+            } else {
+                SuggestionStyle::ShowCode
+            };
+            suggestion(style, Applicability::MachineApplicable)
+        };
+        let applicability = |maybe: bool| {
+            let applicability = if maybe {
+                Applicability::MaybeIncorrect
+            } else {
+                Applicability::MachineApplicable
+            };
+            suggestion(SuggestionStyle::ShowCode, applicability)
+        };
+        for (part, (one, other, differ)) in [
+            ("level", order_of(map, level)),
+            ("child label", order_of(map, child_label)),
+            ("suggestion style", order_of(map, style)),
+            ("applicability", order_of(map, applicability)),
+        ] {
+            assert!(differ, "{part}: the keys differ");
+            assert_eq!(one, other, "{part}: one order in both arrival orders");
+        }
     });
 }

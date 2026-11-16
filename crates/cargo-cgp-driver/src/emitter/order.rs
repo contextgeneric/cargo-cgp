@@ -74,8 +74,12 @@ fn message_text(message: &DiagMessage) -> &str {
 
 /// The content of `diag` beyond its primary span, code, and main message, in a fixed order and
 /// with every span read within its file: each span label, each child with its level, messages,
-/// and primary span, each suggestion with its message and edits, and the message arguments sorted
-/// by name.
+/// and primary span, each suggestion with its message and edits, the message arguments sorted by
+/// name, and then the parts added after those, so they break only a tie the earlier parts leave:
+/// the level, the lint, each child's span labels, and each suggestion's style and applicability.
+///
+/// Postcondition (assumed from what rustc's human and JSON emitters print): two diagnostics with
+/// the same primary span, code, and main message, whose results are equal, print the same.
 fn detail(diag: &DiagInner, source_map: &SourceMap) -> Vec<String> {
     let mut parts = Vec::new();
     for label in diag.span.span_labels() {
@@ -127,5 +131,23 @@ fn detail(diag: &DiagInner, source_map: &SourceMap) -> Vec<String> {
         .collect();
     args.sort();
     parts.extend(args);
+    parts.push(format!("level {:?}", diag.level()));
+    parts.push(format!("lint {:?}", diag.is_lint));
+    for (index, child) in diag.children.iter().enumerate() {
+        for label in child.span.span_labels() {
+            parts.push(format!(
+                "child {index} label {} {} {}",
+                label.is_primary,
+                place_text(label.span, source_map),
+                label.label.as_ref().map_or("", message_text)
+            ));
+        }
+    }
+    for (index, suggestion) in suggestions.iter().enumerate() {
+        parts.push(format!(
+            "suggestion {index} {:?} {:?}",
+            suggestion.style, suggestion.applicability
+        ));
+    }
     parts
 }
