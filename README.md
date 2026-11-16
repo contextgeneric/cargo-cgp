@@ -10,10 +10,10 @@
 [Context-Generic Programming (CGP)](https://contextgeneric.dev/) readable.**
 
 `cargo cgp check` stands in for `cargo check`, compiling your workspace through a `rustc` wrapper
-that recognizes CGP errors and presents them root cause first, much as Clippy layers its own analysis
-on top of `rustc`. `cargo cgp expand` shows the Rust your CGP macros generate, with CGP's type-level
-constructs spelled the way you wrote them. `cargo cgp check` leads with the root cause for the classes
-it recognizes, and the tool does not yet reshape every class.
+that recognizes CGP's errors and rewrites them, much as Clippy layers its own analysis on top of
+`rustc`. `cargo cgp check` leads with the root cause for the classes it recognizes, and the tool
+does not yet reshape every class. Alongside it, `cargo cgp expand` shows the Rust your CGP macros
+generate, with CGP's type-level constructs spelled the way you wrote them.
 
 **[Website](https://contextgeneric.dev/docs/tooling/cargo-cgp/) · [Installation](https://contextgeneric.dev/docs/tooling/cargo-cgp/installation) · [Reading the output](https://contextgeneric.dev/docs/tooling/cargo-cgp/reading-output) · [Error codes](https://contextgeneric.dev/docs/tooling/cargo-cgp/error-codes) · [crates.io](https://crates.io/crates/cargo-cgp)**
 
