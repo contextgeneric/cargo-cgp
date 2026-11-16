@@ -393,9 +393,8 @@ fn defined_twice(name: &str, caret: Span) -> DiagInner {
 // Handled: the helper's caret must come from a `#[cgp_auto_dispatch]` expansion, so a helper-shaped
 // name the program wrote itself, at a caret with no expansion, pairs with nothing.
 // Property: for all diagnostics that are not one half of the pair with the other half buffered, the
-// helper's from that expansion, `shared_dispatch_method` leaves the diagnostic to the next stage, in
-// either arrival order.
-// The positive pairing needs an expansion span, so
+// helper's from that expansion, `shared_dispatch_method` leaves the diagnostic to the next stage,
+// in either arrival order. The positive pairing needs an expansion span, so
 // `tests/ui/wiring/conflicting-wiring/auto_dispatch_shared_method_name.rs` covers it end to end.
 #[test]
 fn a_diagnostic_without_its_helper_goes_to_the_next_stage() {

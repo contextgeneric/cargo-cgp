@@ -3,8 +3,8 @@
 
 use cargo_cgp_ui_tests::harness::{BASELINE_THREADS_FLAG, baseline_rustflags};
 
-// Property: with no ambient `RUSTFLAGS`, or a blank one, the baseline's value is the one-thread flag
-//   alone.
+// Property: with no ambient `RUSTFLAGS`, or a blank one, the baseline's value is the one-thread
+//   flag alone.
 #[test]
 fn uses_the_thread_flag_alone_without_ambient_flags() {
     assert_eq!(baseline_rustflags(None), BASELINE_THREADS_FLAG);

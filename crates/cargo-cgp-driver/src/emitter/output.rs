@@ -84,9 +84,9 @@ pub fn register_output<E: Emitter + 'static>(output: &Arc<Mutex<Output<E>>>) {
 }
 
 /// Emit the registered output's buffered diagnostics, and the diagnostics still queued during
-/// `analysis` after them, untransformed. Called by the panic hook on a crash, before rustc's report. Does nothing when no output is registered on this thread, or
-/// when the panic struck while the output was locked, since the emitter is then mid-way through
-/// writing it.
+/// `analysis` after them, untransformed. Called by the panic hook on a crash, before rustc's
+/// report. Does nothing when no output is registered on this thread, or when the panic struck while
+/// the output was locked, since the emitter is then mid-way through writing it.
 pub fn flush_registered_output() {
     let output = REGISTERED
         .try_with(|registered| registered.borrow().as_ref().and_then(Weak::upgrade))

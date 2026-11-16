@@ -23,8 +23,8 @@ pub enum BufEntry {
     Resolved(Box<ResolvedEntry>),
     /// A diagnostic emitted verbatim at its arrival position unless the flush finds that another
     /// diagnostic, wherever it sits in the buffer, already states its mistake (see
-    /// [`settle_pending`]). Deciding at the flush rather than on arrival makes the decision the same
-    /// whichever of the two arrived first.
+    /// [`settle_pending`]). Deciding at the flush rather than on arrival makes the decision the
+    /// same whichever of the two arrived first.
     Pending(Box<PendingEntry>),
 }
 

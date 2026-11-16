@@ -34,7 +34,8 @@ impl rustc_driver::Callbacks for CgpCallbacks {
         config.opts.trimmed_def_paths = true;
         emitter::install(config);
         if self.expand.is_none() {
-            // Transform the diagnostics of rustc's `analysis` query once it ends, with no lock held.
+            // Transform the diagnostics of rustc's `analysis` query once it ends, with no lock
+            // held.
             config.override_queries = Some(emitter::override_analysis);
         }
     }

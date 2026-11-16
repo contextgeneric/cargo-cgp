@@ -2,12 +2,13 @@
 //!
 //! The emitter re-runs compiler code as a diagnostic arrives or at the end of rustc's `analysis`
 //! query, and renders every buffered diagnostic from its `Drop`, so a bug in either would otherwise
-//! lose the crate's diagnostics or abort the process. [`contain`] runs such work under `catch_unwind`, and the hook
-//! [`install_panic_hooks`] sets up keeps a contained panic from printing an ICE report, since the
-//! compilation goes on. Every other panic is a real crash: the hook first has the emitter print
-//! the diagnostics it buffered ([`flush_registered_output`]), so they appear before the crash
-//! report as they do in plain rustc, and then hands over to rustc's ICE hook, which names
-//! cargo-cgp's issue tracker. See `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md`.
+//! lose the crate's diagnostics or abort the process. [`contain`] runs such work under
+//! `catch_unwind`, and the hook [`install_panic_hooks`] sets up keeps a contained panic from
+//! printing an ICE report, since the compilation goes on. Every other panic is a real crash: the
+//! hook first has the emitter print the diagnostics it buffered ([`flush_registered_output`]), so
+//! they appear before the crash report as they do in plain rustc, and then hands over to rustc's
+//! ICE hook, which names cargo-cgp's issue tracker. See
+//! `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md`.
 
 use std::any::Any;
 use std::cell::{Cell, RefCell};

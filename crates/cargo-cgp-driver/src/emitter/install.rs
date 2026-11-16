@@ -4,8 +4,8 @@
 //! [`set_emitter`](rustc_errors::DiagCtxtHandle::set_emitter) only replaces it, with no way to
 //! recover the original, so [`install`] rebuilds the same inner emitter the compiler's
 //! `default_emitter` would build for the active error format (a [`JsonEmitter`] or an
-//! [`AnnotateSnippetEmitter`]) and wraps *that* in [`DeferringEmitter`], so `cargo-cgp-driver` renders
-//! like vanilla `rustc` in either format, only with the CGP transforms applied.
+//! [`AnnotateSnippetEmitter`]) and wraps *that* in [`DeferringEmitter`], so `cargo-cgp-driver`
+//! renders like vanilla `rustc` in either format, only with the CGP transforms applied.
 
 use std::io;
 
@@ -24,8 +24,8 @@ use crate::emitter::cgp_emitter::DeferringEmitter;
 /// It handles both the JSON error format (the one the front-end drives cargo with) and the
 /// human-readable one a direct `cargo-cgp-driver` (or `cargo cgp check`) invocation renders,
 /// rebuilding whichever emitter the compiler's `default_emitter` would for that format and
-/// wrapping it in [`DeferringEmitter`]. The session options the emitter construction needs are not
-/// reachable from `psess_created`'s `&mut ParseSess`, so they are read here from
+/// wrapping it in [`DeferringEmitter`]. The session options the emitter construction needs are
+/// not reachable from `psess_created`'s `&mut ParseSess`, so they are read here from
 /// [`Config::opts`] and moved into the callback.
 pub fn install(config: &mut Config) {
     let sopts = &config.opts;

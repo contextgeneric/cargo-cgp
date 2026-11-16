@@ -5,12 +5,12 @@
 //! generated, or at a second caret on the same line, when it checks a call's bound once for the
 //! call and once for an argument. The two blocks state one mistake, so they are merged into one at
 //! the earlier block's position, written as the block with more notes, the earlier on a tie, so the
-//! fuller notes survive whichever block arrived first. A caret the earlier block already covers, such as the
-//! whole call around its method name, adds nothing; one elsewhere on the line is kept as a
-//! secondary caret labelled [`COALESCED_SITE_LABEL`], so no location is lost.
+//! fuller notes survive whichever block arrived first. A caret the merged block already covers,
+//! such as the whole call around its method name, adds nothing; one elsewhere on the line is kept
+//! as a secondary caret labelled [`COALESCED_SITE_LABEL`], so no location is lost.
 
 use cargo_cgp_error_processing::COALESCED_SITE_LABEL;
-use rustc_errors::DiagInner;
+use rustc_errors::{DiagInner, DiagMessage};
 use rustc_span::Span;
 use rustc_span::source_map::SourceMap;
 
@@ -46,6 +46,18 @@ pub fn merge_repeats(diags: Vec<DiagInner>, source_map: &SourceMap) -> Vec<DiagI
         let mut diag = diag;
         if diag.children.len() > earlier.children.len() {
             std::mem::swap(earlier, &mut diag);
+            // The carets earlier merges labelled on the block now replaced move to the new base.
+            for label in diag.span.span_labels() {
+                let merged = matches!(
+                    &label.label,
+                    Some(DiagMessage::Str(text)) if text == COALESCED_SITE_LABEL
+                );
+                if merged && !label.is_primary {
+                    earlier
+                        .span
+                        .push_span_label(label.span, COALESCED_SITE_LABEL);
+                }
+            }
         }
         let Some(caret) = diag.span.primary_span() else {
             continue;

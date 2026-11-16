@@ -215,3 +215,28 @@ fn a_merged_repeat_with_equal_notes_keeps_the_earlier_block() {
         assert_eq!(also_required(&merged[0]), [span(CIRCLE)]);
     });
 }
+
+// Concern: when a fuller later block replaces the earlier one, the carets earlier merges labelled
+//   on the replaced block would be lost.
+// Handled: those labels move to the new base.
+// Property: merging three repeats on one line, the last the fullest, keeps every other caret as a
+//   labelled secondary caret.
+#[test]
+fn a_fuller_late_repeat_keeps_the_carets_merged_before_it() {
+    source::with_source(SOURCE, |map, span| {
+        let diags = vec![
+            with_notes(error(Some(E0277), MESSAGE, span(SHAPE)), 0),
+            with_notes(error(Some(E0277), MESSAGE, span(CIRCLE)), 0),
+            with_notes(error(Some(E0277), MESSAGE, span(FROM_TAG)), 2),
+        ];
+        let merged = merge_repeats(diags, map);
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged[0].children.len(), 2);
+        let mut labelled = also_required(&merged[0]);
+        labelled.sort_by_key(|span| span.lo());
+        let primary = merged[0].span.primary_span().expect("a primary caret");
+        let mut carets: Vec<Span> = labelled.iter().copied().chain([primary]).collect();
+        carets.sort_by_key(|span| span.lo());
+        assert_eq!(carets, [span(SHAPE), span(FROM_TAG), span(CIRCLE)]);
+    });
+}

@@ -3,10 +3,10 @@
 //!
 //! rustc emits each diagnostic while holding its diagnostic context's lock, and the emitter's
 //! transforms force compiler queries. A query that emits re-enters that lock, which panics on one
-//! thread and blocks under the parallel front end. So while `analysis` runs, the emitter only queues
-//! what arrives ([`defer`]), and a wrapper around the query ([`override_analysis`]) transforms the
-//! queue once type checking has finished and no lock is held. Diagnostics emitted before or after
-//! `analysis`, such as name resolution's, keep the streaming path. See
+//! thread and blocks under the parallel front end. So while `analysis` runs, the emitter only
+//! queues what arrives ([`defer`]), and a wrapper around the query ([`override_analysis`])
+//! transforms the queue once type checking has finished and no lock is held. Diagnostics emitted
+//! before or after `analysis`, such as name resolution's, keep the streaming path. See
 //! `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md`.
 
 use std::any::Any;
@@ -87,11 +87,11 @@ pub fn override_analysis(_session: &Session, providers: &mut Providers) {
 /// Run the original `analysis` with the diagnostics queued, then transform the queue.
 ///
 /// `analysis` ends a failing crate by raising a `FatalErrorMarker` itself once type checking has
-/// reported an error, so the wrapper catches that unwind, transforms the queue while the compiler is
-/// still usable, and resumes it. The emitter reads the queue once before transforming any of it
-/// ([`DeferredTarget::prepare`]). Any other unwind is a crash: the panic hook has printed the buffer
-/// and the queue already, so it resumes at once. An unwind out of the processing, such as a fatal
-/// error from a query a transform forced, is resumed in turn once the queue is buffered.
+/// reported an error, so the wrapper catches that unwind, transforms the queue while the compiler
+/// is still usable, and resumes it. The emitter reads the queue once before transforming any of it
+/// ([`DeferredTarget::prepare`]). Any other unwind is a crash: the panic hook has printed the
+/// buffer and the queue already, so it resumes at once. An unwind out of the processing, such as a
+/// fatal error from a query a transform forced, is resumed in turn once the queue is buffered.
 fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
     let original = *ORIGINAL_ANALYSIS
         .get()
@@ -152,8 +152,8 @@ pub enum Handling {
 /// An unwind out of a transform stops the transforms: that item, the rest of its batch, and every
 /// later batch are kept untransformed, and the payload is returned for the caller to resume.
 ///
-/// Postcondition: `take` is called until it yields an empty batch, and every item it yields is handed
-/// to `handle` once, in the order taken, as `Transform` until the cap or an unwind and as
+/// Postcondition: `take` is called until it yields an empty batch, and every item it yields is
+/// handed to `handle` once, in the order taken, as `Transform` until the cap or an unwind and as
 /// `KeepUntransformed` after it; the result is the unwind's payload, or `None`.
 pub fn drain_queue<T: Clone>(
     mut take: impl FnMut() -> Vec<T>,

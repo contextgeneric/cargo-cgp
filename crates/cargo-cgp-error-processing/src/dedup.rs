@@ -23,7 +23,8 @@ impl DedupLedger {
     }
 
     /// Whether a resolved diagnostic recorded the coded class headline `header`, so a declined
-    /// report carrying it restates that resolved one (see [`check_and_record`](Self::check_and_record)).
+    /// report carrying it restates that resolved one (see
+    /// [`check_and_record`](Self::check_and_record)).
     pub fn records_header(&self, header: &str) -> bool {
         self.seen.contains(&format!("header\u{1f}{header}"))
     }
@@ -42,9 +43,10 @@ impl DedupLedger {
     /// passes (its class headline, and the provider form a declined re-report may carry instead)
     /// but never consults them, so a declined fallback that arrived first never hides the resolved
     /// tree; the emitter drops such a fallback at its flush once a resolved report recorded its
-    /// header ([`records_header`](Self::records_header)). Two resolved reports of one consumer with different causes are both kept (the
-    /// flush coalesces what they share). A header counts only with a `[CGP-E0` prefix (a
-    /// main-message code), so a kept rustc header is never a de-duplication key.
+    /// header ([`records_header`](Self::records_header)). Two resolved reports of one consumer with
+    /// different causes are both kept (the flush coalesces what they share). A header counts only
+    /// with a `[CGP-E0` prefix (a main-message code), so a kept rustc header is never a
+    /// de-duplication key.
     pub fn check_and_record(
         &mut self,
         cause_signature: Option<&str>,
