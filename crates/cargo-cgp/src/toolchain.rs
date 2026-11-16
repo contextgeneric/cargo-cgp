@@ -1,10 +1,6 @@
-//! Resolving and querying the pinned toolchain.
-//!
-//! The driver embeds one exact nightly, so `cargo cgp check` forces that toolchain for the
-//! wrapped compilation and `setup` installs it. This module names the effective toolchain
-//! (the [`PINNED_TOOLCHAIN`] constant, or the [`TOOLCHAIN_ENV`] override) and queries its
-//! `rustc` through rustup, which is also how the preflight learns whether the toolchain is
-//! installed at all.
+//! Resolving and querying the pinned toolchain: [`PINNED_TOOLCHAIN`] or the [`TOOLCHAIN_ENV`]
+//! override, queried through rustup; see
+//! `cgp-knowledge-base/cargo-cgp/implementation/distribution/provisioning.md`.
 
 use std::io::ErrorKind;
 use std::process::Command;
@@ -31,12 +27,8 @@ pub enum ToolchainError {
     Other(anyhow::Error),
 }
 
-/// The `rustc --version` line of `toolchain`, run as `rustup run <toolchain> rustc --version`.
-///
-/// Asking rustup directly, rather than running the `rustc` on `PATH` with `RUSTUP_TOOLCHAIN` set,
-/// ties the answer to `toolchain`: only rustup's `rustc` shim honors that variable, so a machine
-/// without rustup but with another `rustc` on `PATH` would otherwise answer for a toolchain it does
-/// not have. `rustup run` installs nothing unless given `--install`.
+/// The `rustc --version` line of `toolchain`, run as `rustup run <toolchain> rustc --version`; see
+/// `cgp-knowledge-base/cargo-cgp/implementation/distribution/provisioning.md`.
 pub fn rustc_version(toolchain: &str) -> Result<String, ToolchainError> {
     let output = Command::new("rustup")
         .args(["run", toolchain, "rustc", "--version"])

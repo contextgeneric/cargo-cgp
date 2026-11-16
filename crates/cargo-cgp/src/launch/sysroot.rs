@@ -7,17 +7,9 @@ use anyhow::{Context, bail};
 
 use crate::report::quoted_output;
 
-/// Query a toolchain's sysroot by running `rustc --print sysroot`.
-///
-/// The driver links `rustc_driver` dynamically, so at runtime it needs both the sysroot
-/// libraries on the dynamic-linker path and an explicit `--sysroot` (rustc cannot infer
-/// one from the driver's own out-of-tree location). We resolve the sysroot once here and
-/// hand it to the driver rather than making the driver shell out again.
-///
-/// `rustc` is the compiler to query. When `toolchain` is `Some`, it runs as
-/// `rustup run <toolchain> <rustc>`, so the *pinned* sysroot is returned regardless of the
-/// project's own toolchain or another `rustc` earlier on `PATH`; when `None` (unmanaged mode),
-/// the ambient compiler's sysroot is used.
+/// Query a toolchain's sysroot by running `rustc --print sysroot`, through `rustup run <toolchain>`
+/// when `toolchain` is `Some`, so the driver gets the pinned sysroot; see
+/// `cgp-knowledge-base/cargo-cgp/implementation/executable-structure.md`.
 pub fn sysroot(rustc: &str, toolchain: Option<&str>) -> anyhow::Result<PathBuf> {
     let (program, args) = sysroot_command(rustc, toolchain);
     let output = Command::new(program)

@@ -1,9 +1,6 @@
-//! Bakes the pinned toolchain channel into the front-end at build time.
-//!
-//! The channel lives in the workspace `rust-toolchain.toml` (the single source of truth);
-//! this reads it and exposes it as `CARGO_CGP_PINNED_TOOLCHAIN`, which `config.rs` reads
-//! back with `env!`. Keeping the derivation here means the constant can never drift from
-//! the toolchain file, the same approach `rustc_plugin` uses for its `CHANNEL`.
+//! Bakes the pinned toolchain channel from the workspace `rust-toolchain.toml` into the front-end
+//! as `CARGO_CGP_PINNED_TOOLCHAIN`; see
+//! `cgp-knowledge-base/cargo-cgp/implementation/distribution/pinned-nightly-bump.md`.
 
 use std::path::PathBuf;
 

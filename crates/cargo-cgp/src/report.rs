@@ -1,9 +1,5 @@
-//! How the front-end words what it says about itself, in cargo's style.
-//!
-//! cargo reports a failure as `error: …` with each cause under its own `Caused by:`, a warning as
-//! `warning: …`, advice as `help: …`, and progress as a right-aligned status word before the
-//! message, all on stderr. The front-end's own messages follow the same forms, so its output reads
-//! as part of cargo's. Each form is a pure function over the text, so the shapes are unit-tested.
+//! How the front-end words what it says about itself, in cargo's forms on stderr; see
+//! `cgp-knowledge-base/cargo-cgp/implementation/executable-structure.md`.
 
 /// The width cargo right-aligns a status word to.
 const STATUS_WIDTH: usize = 12;

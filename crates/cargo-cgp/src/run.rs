@@ -24,15 +24,9 @@ pub fn run() -> anyhow::Result<i32> {
     dispatch(&args)
 }
 
-/// Route already-normalized arguments (`["check", ...]`) to a subcommand handler. Split
-/// out from [`run`] so dispatch can be tested without touching the real environment.
-///
-/// A leading `--help`/`-h`, or no subcommand at all, prints the [`help_text`] and succeeds,
-/// so a bare `cargo cgp` is a friendly overview rather than an error; a leading
-/// `--version`/`-V` prints the [`version_text`].
-///
-/// `setup` and `update` take no arguments of their own. Because both install things, they answer
-/// `--help` instead of running, and refuse any other argument rather than silently ignoring it.
+/// Route already-normalized arguments (`["check", ...]`) to a subcommand handler, split out from
+/// [`run`] so dispatch is testable without the real environment; see
+/// `cgp-knowledge-base/cargo-cgp/implementation/executable-structure.md`.
 pub fn dispatch(args: &[String]) -> anyhow::Result<i32> {
     match args.split_first() {
         None => answer(&help_text()),

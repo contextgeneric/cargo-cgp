@@ -9,13 +9,8 @@ use std::{env, process};
 /// already hold the earlier ones.
 const NAME_ATTEMPTS: u32 = 100;
 
-/// A directory only this user can enter, created for one expansion and removed when dropped.
-///
-/// The driver writes the expansion into it and the front-end reads it back. The content travels
-/// through a file rather than the driver's stdout so it cannot interleave with cargo's own progress
-/// output, the same reason `cargo-expand` passes `-o`. A fixed file name in the shared temp
-/// directory would let another user place a symlink there for the driver's write to follow; inside
-/// a directory this process created, with mode 0700 on Unix, nobody else can place anything.
+/// A directory only this user can enter, created for one expansion and removed when dropped; see
+/// `cgp-knowledge-base/cargo-cgp/implementation/expand-command.md`.
 pub struct ExpansionDir {
     dir: PathBuf,
 }
@@ -68,12 +63,8 @@ impl Drop for ExpansionDir {
     }
 }
 
-/// Read the expansion the driver wrote, if it wrote one.
-///
-/// `None` means the driver wrote nothing: a build error before expansion, a cargo invocation that
-/// compiled no workspace target, or an `--item` path that matched nothing, which the caller reports
-/// rather than printing nothing. A stale file cannot be mistaken for output, since the directory is
-/// new for each run.
+/// Read the expansion the driver wrote, or `None` when it wrote nothing; the directory is new for
+/// each run, so a stale file cannot be mistaken for output.
 pub fn read_expansion(path: &Path) -> Option<String> {
     let expansion = fs::read_to_string(path).ok()?;
     (!expansion.trim().is_empty()).then_some(expansion)

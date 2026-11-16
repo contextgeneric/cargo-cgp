@@ -9,16 +9,8 @@ use crate::launch::forwarded_flag::{
 };
 
 /// The target directory the tool chooses for a wrapped command, or `None` when the caller forwarded
-/// a `--target-dir` (in either `--target-dir X` or `--target-dir=X` form), which is taken as given.
-///
-/// The directory is the `cgp` subdirectory of the target directory cargo itself would use, so it
-/// lands beside the project's normal build wherever the command is run from, and follows a
-/// `CARGO_TARGET_DIR`, a `build.target-dir` in a config file, or one given with `--config`. A
-/// separate directory keeps the check from waiting on cargo's lock of the directory every other
-/// cargo run in the project holds. When cargo cannot say (no package here, or a broken manifest),
-/// the relative [`CHECK_TARGET_DIR`] is used and the wrapped command reports the problem itself.
-///
-/// `wrapped` is the command the directory is for, whose toolchain the directory query runs under.
+/// a `--target-dir`; `wrapped` is the command whose toolchain the query runs under. See
+/// `cgp-knowledge-base/cargo-cgp/implementation/executable-structure.md`.
 pub fn default_target_dir(wrapped: &Command, forwarded_args: &[String]) -> Option<PathBuf> {
     if forwards_target_dir(forwarded_args) {
         return None;
@@ -44,14 +36,9 @@ pub fn parse_target_directory(metadata_json: &str) -> Option<PathBuf> {
     value.get("target_directory")?.as_str().map(PathBuf::from)
 }
 
-/// Ask cargo for the target directory of the package the forwarded arguments select. Runs
-/// `cargo metadata --no-deps`, which reads the manifests and configuration without resolving or
-/// fetching dependencies or invoking `rustc`; any failure is `None`, and its message is discarded
-/// because the wrapped command meets the same problem and reports it.
-///
-/// The query runs under the toolchain the wrapped command was given, by copying its
-/// `RUSTUP_TOOLCHAIN`, so rustup's `cargo` proxy never resolves the project's own toolchain file,
-/// which could otherwise make rustup install a toolchain the check itself never uses.
+/// Ask cargo, through `cargo metadata --no-deps` under the wrapped command's toolchain, for the
+/// target directory of the package the forwarded arguments select; any failure is `None`. See
+/// `cgp-knowledge-base/cargo-cgp/implementation/executable-structure.md`.
 fn cargo_target_directory(wrapped: &Command, forwarded_args: &[String]) -> Option<PathBuf> {
     let mut command = Command::new("cargo");
     command.args(metadata_query_args(forwarded_args));

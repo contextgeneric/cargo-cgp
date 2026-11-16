@@ -1,10 +1,5 @@
-//! Well-known names shared across the front-end.
-//!
-//! These are the string constants the front-end cannot avoid hardcoding: the cargo subcommand
-//! name, the executable and crate names, the environment variables it reads or sets, the target
-//! subdirectory, and the marker flags it hands the driver. They live in one place so the functions
-//! that use them take them as parameters rather than embedding literals, keeping the call sites
-//! loosely coupled.
+//! The well-known names the front-end cannot avoid hardcoding, kept in one place so the functions
+//! that use them take them as parameters, as `AGENTS.md`'s code organization asks.
 
 /// The name cargo passes as the first argument when the binary is invoked as
 /// `cargo cgp <...>`. Cargo runs `cargo-cgp cgp <...>`, so the leading `cgp` is
@@ -61,21 +56,13 @@ pub const CHECK_TARGET_SUBDIR: &str = "cgp";
 /// then fails on the same problem, so this path is rarely built into.
 pub const CHECK_TARGET_DIR: &str = "target/cgp";
 
-/// The rustc flag through which `cargo cgp expand` puts the driver in expand mode, carrying the
-/// path the driver writes the finished expansion to (`--cgp-expand=<path>`).
-///
-/// It is passed after `cargo rustc`'s `--`, so cargo appends it to exactly one target's rustc
-/// invocation, which scopes expand mode to the crate the user asked about. The driver strips it
-/// from the argument vector before the compiler sees it, since it is no flag of rustc's; the driver
-/// crate declares the same name independently, and the shared string is the contract between them.
+/// The rustc flag that puts the driver in expand mode with the path it writes the expansion to
+/// (`--cgp-expand=<path>`); see `cgp-knowledge-base/cargo-cgp/implementation/expand-command.md`.
 pub const EXPAND_FLAG: &str = "--cgp-expand";
 
-/// The rustc flag through which `cargo cgp expand --item <path>` tells the driver to narrow the
-/// expansion to one module or item (`--cgp-expand-item=<path>`).
-///
-/// A second flag rather than a second value on [`EXPAND_FLAG`], so each carries one thing. Like
-/// that flag it is stripped by the driver before the compiler sees the argument vector, and the
-/// driver declares the same name independently.
+/// The rustc flag that tells the driver which module or item to narrow the expansion to
+/// (`--cgp-expand-item=<path>`); see
+/// `cgp-knowledge-base/cargo-cgp/implementation/expand-command.md`.
 pub const EXPAND_ITEM_FLAG: &str = "--cgp-expand-item";
 
 /// The crate name of the driver on crates.io, installed by `setup` at the front-end's own

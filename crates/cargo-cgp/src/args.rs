@@ -1,21 +1,11 @@
-//! Normalizing the process arguments.
-//!
-//! `cargo-cgp` is reachable two ways, and this module reduces both to the same shape:
-//! the arguments *after* the tool's own name and the cargo-inserted subcommand.
-//!
-//! - `cargo cgp check ...` → cargo runs `cargo-cgp cgp check ...`
-//! - `cargo-cgp check ...` → run directly, no inserted subcommand
-//!
-//! In both cases the caller wants `["check", ...]`.
+//! Normalizing the process arguments, so `cargo cgp check …` and `cargo-cgp check …` both reach the
+//! router as `["check", …]`; see
+//! `cgp-knowledge-base/cargo-cgp/implementation/executable-structure.md`.
 
 use std::ffi::OsString;
 
-/// Drop the program name and, if present, the cargo-inserted subcommand token, so the
-/// remaining slice starts at the user's actual subcommand.
-///
-/// `subcommand` is the token cargo inserts (see [`crate::config::CARGO_SUBCOMMAND`]); it
-/// is passed in rather than hardcoded here. Only a *leading* occurrence is stripped, so
-/// a later argument that happens to equal it is left untouched.
+/// Drop the program name and a leading cargo-inserted `subcommand` token, so the slice starts at
+/// the user's own subcommand; only a leading occurrence is dropped.
 pub fn strip_subcommand(
     raw_args: impl IntoIterator<Item = String>,
     subcommand: &str,

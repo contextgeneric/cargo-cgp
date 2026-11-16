@@ -49,15 +49,9 @@ impl DriverLocation {
     }
 }
 
-/// Resolve the `cargo-cgp-driver` executable.
-///
-/// An explicit [`DRIVER_ENV`] override wins, so a driver installed elsewhere can be named.
-/// Otherwise, since cargo and rustup lay the driver next to the `cargo-cgp` binary that is running
-/// (both end up in the same `target/<profile>` or `~/.cargo/bin` directory), we look for a sibling
-/// of the current executable, and failing that on `PATH`.
-///
-/// `driver_bin` is the executable name ([`crate::config::DRIVER_BIN`]); the platform executable
-/// suffix (e.g. `.exe`) is appended here.
+/// Resolve the `cargo-cgp-driver` executable: the [`DRIVER_ENV`] override, else a sibling of the
+/// running front-end, else `PATH`; `driver_bin` gets the platform suffix here. See
+/// `cgp-knowledge-base/cargo-cgp/implementation/executable-structure.md`.
 pub fn driver_path(driver_bin: &str) -> anyhow::Result<DriverLocation> {
     let file_name = format!("{driver_bin}{}", env::consts::EXE_SUFFIX);
     if let Some(explicit) = env::var_os(DRIVER_ENV) {

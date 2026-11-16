@@ -5,16 +5,9 @@ use anyhow::bail;
 use crate::config::ITEM_FLAG;
 use crate::launch::scan_flag;
 
-/// Split the forwarded arguments into the ones cargo gets and the item path, if one was given.
-///
-/// Recognizes `--item <path>` and `--item=<path>` among the arguments cargo reads, and **removes**
-/// them, since cargo knows no such flag. The filter is the front-end's one tool-specific argument;
-/// everything else still passes through verbatim, and an `--item` after a `--` is rustc's.
-///
-/// A bare positional path (`cargo cgp expand my::module`, the way `cargo-expand` takes it) is
-/// deliberately not accepted: with every other argument forwarded untouched, a bare word cannot be
-/// told from the value of a cargo flag (`--bin my_module`) without re-declaring cargo's whole
-/// argument grammar here, which forwarding exists to avoid.
+/// Split the forwarded arguments into the ones cargo gets and the `--item` path, removing
+/// `--item <path>` and `--item=<path>`; a bare positional path is not accepted. See
+/// `cgp-knowledge-base/cargo-cgp/implementation/expand-command.md`.
 pub fn take_item(args: &[String]) -> anyhow::Result<(Vec<String>, Option<String>)> {
     let scan = scan_flag(args, ITEM_FLAG);
     let mut item = None;
@@ -50,12 +43,9 @@ fn set_item(item: &mut Option<String>, path: String) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Whether `path` is a `::`-separated run of plain identifiers, optionally rooted at the crate.
-///
-/// Checked here, before anything is compiled, so a typo fails at once rather than after a build
-/// that then matches nothing. The driver parses the path again for real: that parser owns the
-/// matching and the crate-root prefix (`crate::`, `self::`, a leading `::`) it strips, so this is a
-/// fail-fast courtesy rather than the authority, and it only has to be no stricter.
+/// Whether `path` is a `::`-separated run of plain identifiers, optionally rooted at the crate,
+/// checked before anything compiles; see
+/// `cgp-knowledge-base/cargo-cgp/implementation/expand-command.md`.
 fn is_item_path(path: &str) -> bool {
     let path = path.strip_prefix("::").unwrap_or(path);
     !path.is_empty()

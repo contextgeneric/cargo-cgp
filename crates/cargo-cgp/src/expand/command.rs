@@ -13,18 +13,8 @@ use crate::help::{expand_help_text, is_help_flag};
 use crate::launch::{split_forwarded, wrapped_cargo};
 use crate::stdout::{print_line, write_output};
 
-/// Expand one target's CGP macros and print the result, returning the exit code to propagate.
-///
-/// `forwarded_args` are the arguments after `expand`; all but `--item <path>` pass straight through
-/// to cargo, so target selection (`--lib`, `--bin`, `-p`, `--features`, …) is cargo's own, while
-/// `--item` narrows the expansion to one module or item of the target. It is `cargo rustc` rather
-/// than `cargo check` because that is the one subcommand which appends rustc arguments to a
-/// *single* target's invocation, which scopes expand mode to the crate the user asked about,
-/// leaving its dependencies to compile normally.
-///
-/// A clean expansion stops the compilation yet leaves cargo's status at success, so cargo's code
-/// says whether the compiler reported an error, and [`expansion_exit_code`] reports it. An error
-/// that lets expansion finish, such as a wiring entry naming nothing, still prints what expanded.
+/// Expand one target's CGP macros through `cargo rustc` and print the result, returning the exit
+/// code to propagate; see `cgp-knowledge-base/cargo-cgp/implementation/expand-command.md`.
 pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
     // Answer a help request here rather than forwarding it: `cargo rustc --help` would describe
     // cargo's options and never mention `--item`, the one flag that is ours.
@@ -80,7 +70,8 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
     Ok(expansion_exit_code(exit_code(status), expansion.is_some()))
 }
 
-/// The exit code of an expansion, from cargo's code and whether an expansion came back.
+/// The exit code of an expansion, from cargo's code and whether an expansion came back; see
+/// `cgp-knowledge-base/cargo-cgp/implementation/expand-command.md`.
 ///
 /// Postcondition: a failure in cargo's code is kept either way, since the compiler reported an
 /// error even when it printed what expanded; and with no expansion the result is never 0, since

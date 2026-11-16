@@ -56,11 +56,8 @@ pub fn toolchain_failure(error: ToolchainError) -> Result<PreflightFailure, anyh
 }
 
 /// The message for a preflight `failure`. `toolchain` is the toolchain the preflight queried,
-/// `driver` the driver it ran, and `frontend_version` this front-end's version.
-///
-/// Every message about the driver names its path and where it was found, and every failure
-/// `setup` can repair ends with a `help` naming it. A missing rustup is the exception: `setup`
-/// needs rustup too, so that message's `help` names the two ways forward instead.
+/// `driver` the driver it ran, and `frontend_version` this front-end's version; see
+/// `cgp-knowledge-base/cargo-cgp/implementation/distribution/provisioning.md`.
 pub fn failure_message(
     failure: &PreflightFailure,
     toolchain: &str,

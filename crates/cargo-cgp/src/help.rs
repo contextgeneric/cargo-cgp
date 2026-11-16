@@ -51,12 +51,9 @@ the underlying `cargo check` options."
     )
 }
 
-/// The `expand` subcommand's help text: what the command shows, how to select a target, and the
-/// one option that is cargo-cgp's own rather than cargo's.
-///
-/// `expand` needs a help text of its own because it is the one subcommand with a flag cargo does
-/// not know. Its other arguments go to `cargo rustc`, so forwarding `--help` there (as `check`
-/// does, usefully) would answer with cargo's help and never mention `--item`.
+/// The `expand` subcommand's help text, which the front-end answers itself because
+/// `cargo rustc --help` never mentions `--item`; see
+/// `cgp-knowledge-base/cargo-cgp/implementation/expand-command.md`.
 pub fn expand_help_text() -> String {
     format!(
         "cargo-cgp {TOOL_VERSION}

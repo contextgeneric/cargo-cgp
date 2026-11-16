@@ -1,10 +1,5 @@
-//! `cargo cgp setup`: provisioning the toolchain and the driver.
-//!
-//! This is the one command that does the heavyweight, stateful work `check` refuses to do:
-//! install the pinned nightly (with the `rustc-dev` and `llvm-tools` components the driver
-//! links) and build the driver against it, landing the driver beside the front-end so the
-//! sibling lookup finds it. It reads the pinned toolchain and the target version from the
-//! front-end's own constants, so the user never types a nightly date or a version.
+//! `cargo cgp setup`: provisioning the pinned toolchain and the driver, the one command that
+//! mutates; see `cgp-knowledge-base/cargo-cgp/implementation/distribution/provisioning.md`.
 
 use std::env;
 use std::ffi::OsString;

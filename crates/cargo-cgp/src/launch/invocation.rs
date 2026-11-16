@@ -12,13 +12,8 @@ pub fn split_forwarded(args: &[String]) -> (&[String], Option<&[String]>) {
     }
 }
 
-/// The arguments of `cargo <subcommand>`, in the order cargo reads them.
-///
-/// The user's cargo arguments come first, then `tool_cargo_args` (flags the tool adds, such as
-/// `expand`'s `--profile check`), then `--target-dir <target_dir>` when the tool chose the
-/// directory. One `--` follows when anything is bound for rustc: the user's own arguments after
-/// their `--`, then `tool_rustc_args` (`expand`'s marker flags). Everything the tool adds for cargo
-/// therefore stays in front of the separator, and a user's `--` is never doubled.
+/// The arguments of `cargo <subcommand>`, in the order cargo reads them, with one `--` before
+/// anything bound for rustc; see `cgp-knowledge-base/cargo-cgp/implementation/expand-command.md`.
 pub fn cargo_invocation(
     subcommand: &str,
     forwarded_args: &[String],
