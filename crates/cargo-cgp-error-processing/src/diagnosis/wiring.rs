@@ -1,17 +1,6 @@
 //! The rustc-free model and wording for a duplicate-key wiring conflict.
 //!
-//! A duplicate key in `delegate_components!` makes the expansion emit two overlapping
-//! `DelegateComponent` impls, which the compiler rejects with a coherence error (`E0119`).
-//! The driver recognizes the pair, drops the redundant `IsProviderFor` half, and hands the
-//! surviving `DelegateComponent` half's conflict, recovered by querying the trait solver, to
-//! [`plan_wiring_conflict`], which words it into the replacement header. Keeping the model and
-//! wording here, in owned `String` form, makes them unit-testable without a compiler;
-//! the driver's `detect::conflict` module fills the model in from the live `TyCtxt`.
-//!
-//! The wording names *which keys* collide, in the terms the programmer wrote them (an `@`-path
-//! renders in bare `@a.b` notation, not wrapped in `Path!(…)`), so the headline is the fix
-//! rather than a screen of `DelegateComponent<…>` type spine. Each shape carries its own
-//! `[CGP-E0xx]` code, since each rewrites the message into a distinct form with its own fix.
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use crate::code::{
     DUPLICATE_REDIRECT, DUPLICATE_WIRING, MULTIPLE_NAMESPACES, OVERLAPPING_WIRING,

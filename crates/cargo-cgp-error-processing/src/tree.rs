@@ -1,15 +1,6 @@
 //! Rendering a resolved check failure's dependency chain as a `cargo tree`-style tree.
 //!
-//! When the driver's typed resolver traces a check failure down to its root cause, it recovers
-//! the whole transitive chain that led there: the checked trait, each provider and
-//! trait it depends on, and the missing leaf. This module turns that chain, handed over as
-//! a compiler-free [`DependencyTree`], into the indented text that goes in the replacement
-//! diagnostic's one dependency note.
-//!
-//! It lives in this rustc-free crate, like [`rewrite`](crate::rewrite), so the rendering is
-//! unit-tested on any toolchain even though the *data* is built in the driver from typed
-//! compiler state. The box-drawing is delegated to [`termtree`], the same lightweight renderer
-//! `cargo tree` and other cargo tools use.
+//! See cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md.
 
 use termtree::{GlyphPalette, Tree};
 

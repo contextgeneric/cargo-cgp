@@ -1,22 +1,7 @@
-//! The rustc-free model and wording for a wiring key or value that does not resolve.
+//! The rustc-free model and wording for a wiring key or value that does not resolve, including a
+//! provider header's derived component key.
 //!
-//! `delegate_components!` writes each entry `Key: Value` into an impl,
-//! `impl DelegateComponent<Key> for Context { type Delegate = Value; }`, so a key or a value that
-//! names nothing is a name the compiler cannot find there, and a consumer trait written as a key is
-//! a trait where a type belongs. The compiler reports these during name resolution or type lowering
-//! (`E0425` "cannot find type", `E0782` "expected a type, found a trait"), with suggestions that
-//! follow the spelling rather than CGP: a similarly named trait, a `dyn`, a type parameter. A
-//! `#[cgp_impl(Provider)]` written without `new` fails the same way, since nothing then declares
-//! the provider struct.
-//!
-//! A `#[cgp_impl]` or `#[cgp_provider]` header names its component too, implicitly: the macro
-//! derives the key from the provider trait's path as written, `Greeter` giving `GreeterComponent`,
-//! so a key not imported, a module that re-exports the trait alone, or a trait name that is not the
-//! component's fails there with the same `E0425`, or an `E0107` for a key with parameters.
-//!
-//! The driver recovers which of these mistakes a diagnostic is and the names that fix it, and
-//! [`plan_unresolved_wiring_name`] words the coded header that replaces the message, with
-//! [`unresolved_wiring_name_note`] saying why and [`unresolved_wiring_name_help`] carrying the fix.
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use crate::code::{
     CGP_IMPL_PROVIDER_NOT_DECLARED, COMPONENT_NOT_IMPORTED, CONSUMER_TRAIT_AS_KEY,

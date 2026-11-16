@@ -4,18 +4,10 @@ use crate::diagnosis::leaf::{FieldIssue, Leaf};
 use crate::diagnosis::resolved::Cause;
 
 /// Coalesce causes that are each a *present-but-underived* field on the same struct into one
-/// [`Leaf::UnderivedFields`] cause, since `#[derive(HasField)]` derives an impl for every field, so
-/// several underived fields on one struct are one mistake with one fix, and listing them as
-/// separate root causes overstates the work. The merged cause keeps every field's path, so the
-/// note's dependency graph still branches to the per-field leaves; only the heading is coalesced
-/// into one `[CGP-E111]` lead naming every field, and the derive `help` names the one fix.
+/// [`Leaf::UnderivedFields`] cause, keeping every field's path.
 ///
-/// The coalescing keys on [`FieldIssue::Present`] deliberately: a *genuinely absent* field
-/// ([`FieldIssue::Missing`]) is its own fix (add the field), so a struct missing several fields
-/// correctly keeps several causes, and a fieldless struct's derive, which emits no impls, reads
-/// as absent fields, not underived ones. Underived fields on *different* structs are different
-/// fixes and stay apart, as does a lone underived field, which keeps its more specific
-/// single-field wording.
+/// See cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md for why only a
+/// present field on one struct merges.
 pub fn coalesce_underived_fields(causes: &[Cause]) -> Vec<Cause> {
     let mut out: Vec<Cause> = Vec::new();
     // The owners already coalesced, so the group is emitted once, at its first member's position.

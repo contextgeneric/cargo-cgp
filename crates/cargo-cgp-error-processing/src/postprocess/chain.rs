@@ -22,26 +22,16 @@ pub enum Origin {
     Untransformed,
 }
 
-/// Run the post-processing chain over one message string: strip module qualifiers except on a name
-/// in `ambiguous`, resugar `Symbol!`, resugar `Path!`, resugar `Product!`/`Sum!` (and their
-/// `Struct!`/`Enum!` forms), then rewrite an unmet `HasField` bound. The order matters: the strips
-/// first so the later stages match the bare CGP names, `Symbol!` resugaring before `Path!`
-/// resugaring (which reads the already-resugared `Symbol!("…")` segments) and before the list
-/// resugaring (which reads a `Field`'s `Symbol!("…")` tag when naming a struct field or enum
-/// variant), and before the field rewrite (which matches the resugared `HasField<Symbol!("…")>`
-/// form). Returns the rewritten text when the chain changed it, `None` otherwise.
+/// Run the post-processing chain over one message string, returning the rewritten text when the
+/// chain changed it and `None` otherwise. For an [`Origin::Untransformed`] message the strips alone
+/// never count as a change.
 ///
-/// For an [`Origin::Untransformed`] message the strips alone never count as a change: the result
-/// is kept only when a later stage recovered a CGP encoding, so a glob-imported CGP trait keeps
-/// the path rustc printed.
+/// `ambiguous` holds the type names that name more than one item in the build, whose paths keep
+/// their qualifier. `has_field_impls` is the whole-diagnostic fact the field rewrite needs, which
+/// the caller computes once with [`context_has_hasfield_impls`](super::context_has_hasfield_impls).
 ///
-/// `ambiguous` holds the type names that name more than one item in the build; a path ending in one
-/// keeps its qualifier everywhere, so `std::io::Error` never reads as another `Error`.
-///
-/// `has_field_impls` is the whole-diagnostic fact the field rewrite needs (whether the
-/// context implements `HasField` for any field), which the caller computes once with
-/// [`context_has_hasfield_impls`](super::context_has_hasfield_impls) across every message
-/// before rewriting each.
+/// See cgp-knowledge-base/cargo-cgp/implementation/error-processing.md for the stages and why their
+/// order matters.
 pub fn postprocess_message(
     text: &str,
     has_field_impls: bool,
@@ -82,22 +72,13 @@ pub fn postprocess_message(
     }
 }
 
-/// Post-process a message rustc built from several *styled fragments*, reading them as the one
-/// text they render as. Returns the rewritten whole when reading them together achieves something
+/// Post-process a message rustc built from several *styled fragments*, reading them as the one text
+/// they render as. Returns the rewritten whole when reading them together achieves something
 /// reading them singly cannot, and `None` to keep the fragments (and their styling) as they are.
 ///
-/// rustc splits a message into fragments to highlight parts of it, and when it highlights the
-/// *difference* between two types it splits at every difference. Its "similar impl" hint does
-/// exactly that, so a CGP type in one is shredded: `Symbol<3, Chars<'B', …>>` becomes a fragment
-/// per character, and no fragment holds a whole construct for [`postprocess_message`] to match.
-/// The rendered line is the concatenation, so matching on the concatenation is matching on what the
-/// reader actually sees.
+/// Precondition: the caller has run [`postprocess_message`] over each fragment.
 ///
-/// The caller runs [`postprocess_message`] over each fragment first and passes the results here, so
-/// this fires only on a construct that genuinely spans a boundary, which makes flattening safe
-/// to pay for: the caller replaces the fragments with this one string, losing rustc's
-/// highlighting, and it only does so when there was a CGP construct to recover, never merely
-/// because a fragment was tidied on its own.
+/// See cgp-knowledge-base/cargo-cgp/implementation/error-processing.md.
 pub fn postprocess_fragments(
     fragments: &[&str],
     has_field_impls: bool,

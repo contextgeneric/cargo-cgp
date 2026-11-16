@@ -139,17 +139,8 @@ impl DependencyGraph {
     /// [`render`](Self::render) against a `seen` set that outlives this graph, so a node some
     /// *earlier* graph already drew is `(*)`-referenced here instead of expanded again.
     ///
-    /// This lets a compilation's diagnostics elide across blocks. CGP wiring is lazy, so one
-    /// mistake surfaces in several diagnostics that do not de-duplicate: a hand-written wrapper
-    /// trait is a distinct trait from the consumer it reduces to, so it keeps its own block, and
-    /// their chains can share everything below their own first few hops. Threading one `seen`
-    /// through the blocks in emission order keeps each block's own prefix and truncates the shared
-    /// remainder, which is the same `(*)` convention `cargo tree` uses for a subtree printed
-    /// elsewhere in the output.
-    ///
-    /// A truncated block stays actionable on its own: its header, its fix `help`, and its
-    /// `root cause:` lead all still name the cause, so only chain *detail* is elided, never what
-    /// failed or how to fix it.
+    /// See cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md for eliding
+    /// across blocks.
     pub fn render_seen(&self, seen: &mut HashSet<ChainNode>) -> String {
         let mut expanded = vec![false; self.nodes.len()];
         // Nodes this render draws are collected apart and folded into `seen` only at the end, so
@@ -193,17 +184,12 @@ impl DependencyGraph {
         leaves.into_iter().map(DependencyTree::leaf).collect()
     }
 
-    /// Expand node `id` into a render tree. A node whose subtree was already drawn, earlier in this
-    /// render (`expanded`, indexed by id) or by an earlier one (`seen`, keyed by node identity so
-    /// it spans graphs), is emitted as a `(*)` reference rather than re-expanded; the `expanded`
-    /// marks double as cycle protection, since each node is expanded at most once. Only a node with
-    /// children is ever referenced that way: a leaf hides no subtree, so it is drawn in full
-    /// wherever a chain bottoms out on it.
+    /// Expand node `id` into a render tree, emitting a node with children whose subtree was already
+    /// drawn, in this render or an earlier one, as a `(*)` reference; the `expanded` marks also
+    /// stop a cycle.
     ///
-    /// **Every CGP construct is rendered in full.** A hop repeating its parent's trait still prints
-    /// its whole generic list, even in a dispatch chain that restates a program-sized `Code` at
-    /// every step: shortening it to `<…>` would hide the very type the reader is tracing, and leave
-    /// them unable to tell a genuine repeat from a hop whose parameters differ.
+    /// See cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md for the
+    /// rendering rules.
     fn expand(
         &self,
         id: usize,

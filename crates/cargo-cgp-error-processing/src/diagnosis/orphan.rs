@@ -1,20 +1,7 @@
-//! The rustc-free model and wording for an orphan-rule namespace-registration failure.
+//! The rustc-free model and wording for an orphan-rule namespace-registration failure
+//! (`[CGP-E022]`).
 //!
-//! Registering wiring into a namespace lowers to `impl<Param> Namespace<Param> for Key`. Rust's
-//! orphan rule accepts a foreign-trait impl only when a local type covers its parameters, so when
-//! *both* the namespace trait and the key are foreign (a downstream crate registering into an
-//! upstream namespace it does not own, keyed on an upstream component it does not own either),
-//! nothing is local and the compiler rejects it with `E0210` (or its sibling `E0117`). The raw
-//! diagnostic is accurate but frames a CGP wiring decision as a bare coherence rule, naming the
-//! machinery parameter (`__Components__` / `__Table__`) rather than the namespace and key the
-//! programmer wrote.
-//!
-//! This model records what the driver recovers from the offending impl: the foreign namespace,
-//! the key, and which construct registered it, and [`plan_orphan_conflict`] words it into the
-//! `[CGP-E022]` header that replaces the raw message, with [`orphan_conflict_help`] carrying the
-//! ownership-based fix. Keeping the model and wording here, in owned `String` form, makes
-//! them unit-testable without a compiler; the driver's `detect::orphan` module fills the model in
-//! from the live `TyCtxt`.
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use crate::code::ORPHAN_FOREIGN_NAMESPACE;
 use crate::diagnosis::wiring::WiringKey;

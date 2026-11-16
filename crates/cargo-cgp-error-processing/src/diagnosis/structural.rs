@@ -1,14 +1,6 @@
 //! The rustc-free model and wording for the structural mistakes in a wiring or its checks.
 //!
-//! Some mistakes are in the shape of what the macros were given rather than in what the wiring
-//! resolves to: a check table that lists one entry twice, two tables whose check traits share a
-//! name, a check entry that names no parameters for a component that takes some, a `for` loop whose
-//! key does not use its variable, a `#[default_impl]` on a generic impl, or a wiring entry whose
-//! generic parameters its key does not use. The compiler rejects the code the macro generated from
-//! it with a bare coherence, name, or trait error about generated items (`__CheckApp`, an impl's
-//! type parameter), which names neither the table nor the entry. The driver recovers the mistake
-//! from the generated items and fills [`StructuralMistake`] in; [`plan_structural_mistake`] words
-//! the header and [`structural_mistake_help`] the fix.
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use crate::code::{
     CHECK_AT_UNIT_PARAMETERS, DUPLICATE_CHECK, DUPLICATE_CHECK_TRAIT, ENTRY_PARAMETERS_NOT_IN_KEY,

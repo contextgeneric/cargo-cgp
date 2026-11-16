@@ -26,18 +26,12 @@ pub struct Cause {
     pub paths: Vec<Vec<ChainNode>>,
 }
 
-/// The root causes of one failure: **one [`Cause`] per distinct leaf**, each holding every path
-/// that reaches it.
+/// The root causes of one failure.
 ///
-/// That invariant is the whole point of the type. The wording, the de-duplication signature, the
-/// coalescing, and the derive `help`s all read a cause list expecting each leaf once, and a list
-/// holding one leaf twice does not fail loudly: it makes a downstream reader count one mistake
-/// several times, which surfaced as `` the fields `name`, `name`, and `name` `` in a lead. There is
-/// no way to construct a `Causes` that violates it: every constructor normalizes, and the field is
-/// private.
+/// Invariant: one [`Cause`] per distinct leaf, each holding every path that reaches it; every
+/// constructor normalizes and the field is private. Reads go through [`Deref`] to `[Cause]`.
 ///
-/// Reads go through [`Deref`] to `[Cause]`, so consumers keep slice ergonomics while construction
-/// stays controlled.
+/// See cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Causes(Vec<Cause>);
 

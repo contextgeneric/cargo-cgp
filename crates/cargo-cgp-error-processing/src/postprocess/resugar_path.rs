@@ -1,36 +1,8 @@
-//! Post-processor: resugar the `Path!` type-level path.
+//! Post-processor: resugar the `Path!` type-level path, on a well-formed match only.
 //!
-//! `Path!(@app.GreeterComponent)` expands to a right-nested `PathCons` chain terminated by
-//! `Nil`: `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>` (see the CGP `Path!`
-//! reference). This reverses that spine back to `Path!(@app.GreeterComponent)` in the
-//! diagnostic text.
-//!
-//! Like every resugaring post-processor, it rewrites **only on a well-formed match**. `Path!`
-//! classifies each segment the same way going forward: a single identifier whose first character is
-//! ASCII-lowercase and that is not a primitive type becomes a `Symbol`; every other segment is kept
-//! verbatim as the named type. So a `Symbol!("name")` head is resugared to the bare segment `name`
-//! only when `name` is such a lowercase, non-primitive identifier, and every other segment is
-//! rendered back verbatim as its type: a capitalized component marker (`GreeterComponent`), a
-//! primitive (`u32`), or a compound value type an `open` statement dispatches on (`Vec<u8>`,
-//! `&Coord`, `DateTime<Utc>`), including a module-qualified type (`std::io::Error`), which rustc
-//! qualifies only when the bare name is ambiguous. Two shapes still decline, leaving the raw
-//! `PathCons` spine rather than risk mangling it: a qualified segment that is not a plain type
-//! path, and a **bare lowercase identifier**, which `Path!` would have made a `Symbol`, so meeting
-//! one as a plain type is ambiguous.
-//!
-//! A path may also be **open-ended**: instead of terminating in `Nil`, its spine ends in a
-//! generic "rest of path" parameter, which rustc renders as the inference placeholder `_` in
-//! the trait references it prints (as in the conflicting-wiring `E0119` blocks over a
-//! duplicated `@`-path key). That parameter is the `__Wildcard__` tail `cgp`'s macros end every
-//! `@`-path key and redirect target with, which the programmer never writes, so the bare form a
-//! rewritten message uses leaves it out: `PathCons<Symbol!("foo"), PathCons<Symbol!("bar"), _>>`
-//! reads `@foo.bar`, the key as its entry wrote it. The `Path!(…)` form declines on such a tail
-//! instead, since `Path!(@foo.bar)` would name the closed, `Nil`-terminated path, a different
-//! type. Only a bare `_` tail is open: `_` is never a concrete path segment, and any other
-//! non-`Nil` tail still declines.
-//!
-//! Runs after [`resugar_symbol`](fn@super::resugar_symbol), so a symbol segment is already in its
-//! `Symbol!("…")` surface form by the time this matches it.
+//! Runs after [`resugar_symbol`](fn@super::resugar_symbol). See
+//! cgp-knowledge-base/cargo-cgp/implementation/resugaring.md for how each segment renders, which
+//! ones decline, and the open-ended tail.
 
 use crate::postprocess::scan_head_tail;
 use crate::syntax::{is_ident, is_primitive_type};
@@ -134,18 +106,9 @@ fn is_open_tail(tail: &str) -> bool {
 }
 
 /// Render one spine segment back to its `Path!` surface form, or `None` when it would not
-/// round-trip. A `Symbol!("name")` becomes the bare `name` when `name` is a lowercase,
-/// non-primitive identifier. Every other segment was kept verbatim as a type by `Path!` going
-/// forward: a capitalized component marker (`GreeterComponent`), a primitive (`u32`), or a compound
-/// value type an `open` statement dispatches on (`Vec<u8>`, `&Coord`, `DateTime<Utc>`), so it is
-/// rendered verbatim.
+/// round-trip.
 ///
-/// A **`::`-qualified** type segment (`std::io::Error`) is rendered as written, since `Path!`
-/// parses it as the same type. Two shapes decline, so the whole path is left as its raw spine
-/// rather than silently mangled: a qualified segment that is not a plain type path (a lowercase
-/// tail, generics), and a **bare lowercase identifier**, which `Path!` would have made a `Symbol`,
-/// so meeting one as a plain type (rather than inside a `Symbol!(…)`) is ambiguous, not a clean
-/// path.
+/// See cgp-knowledge-base/cargo-cgp/implementation/resugaring.md for the segment rules.
 fn render_segment(segment: &str) -> Option<String> {
     let segment = segment.trim();
     if let Some(name) = symbol_inner(segment) {

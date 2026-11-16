@@ -23,25 +23,8 @@ pub struct ComponentTraitNames {
 
 /// A lazily-built map from a component-marker's full path to the trait names behind it.
 ///
-/// Building the map is expensive (the driver walks the whole trait graph through a
-/// `TyCtxt`), so it is wrapped in a [`LazyLock`]: the initializer runs at most once, on the
-/// first lookup, and *not at all* if no message is ever rewritten. That lets the
-/// emitter drop a separate "does this diagnostic mention CGP?" pre-filter: the rewrite
-/// functions look a marker up only after a message parses as a wiring form, so an ordinary
-/// diagnostic never forces the map.
-///
-/// The map's one consumer is the **text rewrite**, which has only the marker *name* rustc
-/// printed, so [`get`](Self::get) matches a key by the printed path's trailing segments, and
-/// declines when two markers share a name the printed text does not tell apart. (The
-/// typed resolver does not use the map at all: it reads consumer and provider names straight off
-/// the real trait `DefId`s it walks.) The keys stay full paths so same-named markers in different
-/// modules occupy distinct entries.
-///
-/// The initializer is a plain `fn` pointer, not a closure, so this type captures no compiler
-/// state and can live in this rustc-free crate. The driver supplies a `fn` that reads the
-/// `TyCtxt` from thread-local scope and builds the map (valid because a wiring message is
-/// emitted during trait solving, when a `TyCtxt` is in scope); the tests supply a `fn` that
-/// returns a fixed map.
+/// See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md for why it is
+/// lazy, keyed by full path, and built by a `fn` pointer.
 pub struct ComponentNameMap {
     /// The underlying lazily-initialized map, keyed by each marker's full path. Public so the
     /// driver and tests can also construct one directly, though [`new`](Self::new) is the usual

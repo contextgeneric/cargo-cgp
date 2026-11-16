@@ -1,23 +1,8 @@
 //! Post-processor: resugar the `Product!`/`Sum!` type-level lists and their `Struct!`/`Enum!`
-//! forms.
+//! forms, on an exact structural match only.
 //!
-//! `Product![A, B]` expands to the right-nested product spine `Cons<A, Cons<B, Nil>>`, and
-//! `Sum![A, B]` to the sum spine `Either<A, Either<B, Void>>` (see the CGP `Product!` / `Sum!`
-//! references). This reverses those spines back to the surface macro. A spine whose elements are
-//! *all* `Field` cells resugars one step further to the CGP `Struct!` or `Enum!` shape it
-//! describes, when the shape has an exact spelling: a product to `Struct! { name: Type, … }` or
-//! `Struct!(A, B)`, and a sum to `Enum! { Name(Type), … }`. The spelling rules are the shared
-//! [`shape`](crate::shape) module's.
-//!
-//! This is the **fallback** counterpart of the driver's typed `render_ty` (which resugars the same
-//! spines in the dependency tree, anchored by `DefId` to the CGP crates). It exists to catch a raw
-//! spine in a diagnostic the resolver *declined* and left to rustc's own text, so a fallback
-//! message reads the same as a reshaped one. Running on plain text, it cannot check the defining
-//! crate, so, like every resugaring post-processor, it resugars only on an **exact structural
-//! match**: the spine must close on the exact `Nil` (product) or `Void` (sum) terminator, and any
-//! other shape is left untouched. It runs after [`resugar_symbol`](fn@super::resugar_symbol), so a
-//! `Field`'s tag is already in its `Symbol!("…")` surface form when a field/variant name is read
-//! from it, and each element is resugared recursively so a nested list resugars in turn.
+//! Runs after [`resugar_symbol`](fn@super::resugar_symbol). See
+//! cgp-knowledge-base/cargo-cgp/implementation/resugaring.md.
 
 use crate::postprocess::scan_head_tail;
 use crate::shape::{ShapeTag, render_enum_shape, render_struct_shape};

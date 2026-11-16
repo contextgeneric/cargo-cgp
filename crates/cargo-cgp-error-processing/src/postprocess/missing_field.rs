@@ -1,33 +1,11 @@
 //! Post-processor: turn an unmet `HasField` bound into a missing-field message, where the text
 //! shows the field is missing.
 //!
-//! rustc reports a getter's unmet dependency as
-//! `the trait `HasField<Symbol!("name")>` is not implemented for `Context``. This rewrites
-//! that to `missing field `name` on `Context`` when the same diagnostic shows the context
-//! implementing `HasField` for some other field: rustc's "similar impl" landmark, either inline
-//! (`but trait `HasField<…>` is implemented for it`, one other field) or as a separate
-//! `` `Context` implements trait `HasField<…>` `` note (several other fields). A struct that
-//! implements `HasField` for its other fields derives it, so the one field it lacks is missing.
-//! The rewritten clause carries no CGP error code: this acts on whatever sub-message the clause
-//! appears in, and codes classify only a rewritten *main* message (see `crate::code`).
-//!
-//! Every other clause keeps rustc's wording, because the text cannot tell what the fix is:
-//!
-//! - **No landmark:** the context implements `HasField` for no field, and the text cannot tell a
-//!   struct that lacks the derive from one that lacks the field, or a fieldless struct whose derive
-//!   generates nothing.
-//! - **A numeric tag:** `Symbol!("0")` never names a field, since a field name cannot start with a
-//!   digit; a tuple struct's fields are keyed `Index<0>`, so the field is not missing.
-//! - **A generated parameter:** `__Context__` is the context a macro-generated impl is generic
-//!   over, not a struct, so the fix is a bound on it (`#[uses(…)]`), not a field.
-//!
-//! Whether the context has any `HasField` impl ([`context_has_hasfield_impls`]) is a property of
-//! the *whole* diagnostic, since the landmark can sit far from the clause, so a caller decides it
-//! once across every message before rewriting each in turn.
-//!
 //! Meant to run after [`strip_unambiguous_paths`](super::strip_unambiguous_paths) and
 //! [`resugar_symbol`](fn@super::resugar_symbol), so it matches the bare, resugared
-//! `HasField<Symbol!("…")>` form.
+//! `HasField<Symbol!("…")>` form. See
+//! cgp-knowledge-base/cargo-cgp/implementation/error-processing.md for when it fires and which
+//! clauses keep rustc's wording.
 
 use crate::naming::is_reserved_name;
 use crate::postprocess::strip_modules::strip_module_paths;

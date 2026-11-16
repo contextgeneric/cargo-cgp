@@ -5,42 +5,14 @@ use std::collections::HashMap;
 use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::resolved::Resolved;
 
-/// Partition failures into groups that **share a root cause**, so the emitter can coalesce each
-/// group into one block that states the shared cause once. Returns one `Vec` of indices into
-/// `resolveds` per group, each group in arrival order and the groups themselves ordered by their
-/// first member, so the caller emits each group where its first member arrived and overall ordering
-/// is preserved.
+/// Partition failures into groups that **share a root cause**, transitively, so the emitter can
+/// coalesce each group into one block. Returns one `Vec` of indices into `resolveds` per group,
+/// each in arrival order, the groups ordered by their first member.
 ///
-/// Two failures group when they share *at least one* root cause, and grouping is transitive: the
-/// groups are the connected components of the "shares a cause" relation. Demanding two *identical*
-/// cause sets instead would report one mistake as several blocks. CGP wiring is lazy, so a single
-/// omission surfaces at several depths, and each depth sees a different subset of its causes: a
-/// `check_components!` entry stops at the first unmet leaf on its own branch, while a use-site call
-/// walks every wired component and reaches them all. Those subsets overlap without ever being
-/// equal, so an exact-match key would group no two of them, and the block whose causes are the
-/// *union* of the others would fare worst: its chain would be fully elided against the blocks that
-/// had already drawn every one of its roots, leaving a bare `root causes:` list with no dependency
-/// chain.
+/// Invariant: no two groups share a root cause, keyed structurally on each cause's [`Leaf`].
 ///
-/// Transitivity makes the relation a partition rather than an ambiguous overlap graph: a failure
-/// whose causes are covered by two others would otherwise have no single group to join. Grouping
-/// this way also earns an invariant the exact-match key could not: **no two coalesced blocks share
-/// a root cause**, so one mistake is stated in exactly one block, and two blocks cannot have the
-/// same top-level roots by way of a shared cause, which would make the whole-chain elision
-/// degenerate.
-///
-/// A cause is identified by its [`Leaf`] **structurally**, not by the rendered `root cause:` lead
-/// the leaf words. A leaf names its owner (the struct missing a field, the context missing a wiring
-/// entry, the provider missing a table entry), so failures on different contexts that bottom out on
-/// one owner's mistake group too: a context whose provider needs another context's missing field
-/// fails with that context, and one fix repairs both. An ordinary bound names no owner (`f64: Eq`
-/// can come from several contexts' own wiring), so it is identified together with the context it
-/// was reached from. Keying on the wording would make a reword of a lead silently change which
-/// diagnostics coalesce; the leaf is the thing two failures either do or do not have in common.
-/// (The de-duplication ledger's [`cause_signature`](crate::cause_signature) stays textual for its
-/// own reason: it shares a key space with rendered-message keys.)
-///
-/// A failure with no causes shares nothing and forms its own group.
+/// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md for why grouping is transitive
+/// and keys on the leaf rather than its wording.
 pub fn group_by_shared_cause(resolveds: &[&Resolved]) -> Vec<Vec<usize>> {
     let mut parent: Vec<usize> = (0..resolveds.len()).collect();
 

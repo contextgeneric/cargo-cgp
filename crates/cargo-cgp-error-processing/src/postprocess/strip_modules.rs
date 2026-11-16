@@ -1,24 +1,8 @@
-//! Post-processor: strip module qualifiers from every path, leaving the item the path names.
+//! Post-processor: strip module qualifiers from every path, leaving the item the path names. It
+//! runs before the resugaring stages, so they match the bare names.
 //!
-//! rustc prints types and traits fully qualified (`contexts::app::MockApp`,
-//! `interfaces::types::QuantityTypeProviderComponent`, `std::cmp::Eq`), which is noise in a CGP
-//! diagnostic, where the programmer wrote and reads the bare name (`MockApp`,
-//! `QuantityTypeProviderComponent`, `Eq`). This drops the module segments of each `a::b::C` run, in
-//! both the rewritten CGP messages and the resugaring fallback, so the two read the same. A module
-//! is named in lowercase and a type or trait in uppercase, so the run keeps everything from its
-//! first uppercase segment: an item inside a trait or type keeps its qualifier
-//! (`cgp::macro_prelude::TryComputer::try_compute` reads `TryComputer::try_compute`), while a run
-//! with no uppercase segment, such as a free function's path, keeps only its last segment. A CGP
-//! re-export path such as `cgp::prelude::UseType`, or `cgp::macro_prelude::Nil` for a name outside
-//! the prelude, is just one such run. The strip runs first, before the resugaring stages, so they
-//! match the bare names.
-//!
-//! It rewrites **only** a run of plain identifiers joined by `::` (`foo::Bar`, `a::b::c::D`) and
-//! leaves everything else alone: a lone identifier keeps its name, a turbofish (`foo::<T>`) is not
-//! an identifier run so it is untouched, an associated-type projection's `>::Assoc` tail has no
-//! identifier before its `::` so it stays, a `use` statement's path keeps every segment since the
-//! reader types it as written (`use cgp::core::field::impls::CanDowncastFields;`), and text inside
-//! a string literal is skipped so a `Symbol!("a::b")` (were one to arise) is never mangled.
+//! See cgp-knowledge-base/cargo-cgp/implementation/resugaring.md for which runs it rewrites and
+//! which it leaves.
 
 use crate::postprocess::ambiguous::AmbiguousNames;
 use crate::syntax::string_literal_end;

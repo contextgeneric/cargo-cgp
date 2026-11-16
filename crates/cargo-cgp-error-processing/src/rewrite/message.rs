@@ -1,33 +1,8 @@
 //! Rewriting CGP wiring messages to name the traits behind a component marker.
 //!
-//! rustc reports a CGP wiring failure in terms of the internal wiring traits, which name the
-//! *component marker* but not the consumer or provider trait a reader thinks in, both in the
-//! primary header the error opens with and in the obligation-chain notes:
-//!
-//! ```text
-//! the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle>` is not satisfied
-//! required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
-//! required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
-//! ```
-//!
-//! Given a [`ComponentNameMap`] from a marker's name to the trait names behind it, these
-//! rewrites turn both forms into ones that name the traits. The header rewrite also classifies
-//! the message with its [CGP error code](crate::code), since an unsatisfied `IsProviderFor` bound
-//! is a recognized CGP error class:
-//!
-//! ```text
-//! [CGP-E002] the provider trait `AreaCalculator` with context `Rectangle` is not implemented for provider `RectangleArea`
-//! required for the provider `RectangleArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`
-//! required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`
-//! ```
-//!
 //! [`rewrite_message`] is the entry point; it dispatches to the note-form rewrite
-//! ([`rewrite_required_for`]) and the header rewrite ([`rewrite_trait_bound`]).
-//! The codes belong on *main* messages only: the driver applies the full dispatch to a
-//! diagnostic's header and [`rewrite_required_for`] to its sub-messages.
-//!
-//! Each form parses the message *before* consulting `names`, so a message that is not a CGP
-//! wiring form returns `None` without ever forcing the map's lazy initializer.
+//! ([`rewrite_required_for`]) and the header rewrite ([`rewrite_trait_bound`]). See
+//! cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use crate::code::PROVIDER_TRAIT_UNIMPLEMENTED;
 use crate::naming::is_reserved_name;

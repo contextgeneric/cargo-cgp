@@ -1,15 +1,6 @@
-//! Post-processor: resugar the `Symbol!` type-level string.
+//! Post-processor: resugar the `Symbol!` type-level string, on an exact structural match only.
 //!
-//! `Symbol!("xy")` expands to `Symbol<2, Chars<'x', Chars<'y', Nil>>>`: a length and a
-//! right-folded character list terminated by `Nil` (see the CGP `Symbol!` reference). This
-//! reverses that spine back to `Symbol!("xy")` in the diagnostic text.
-//!
-//! Resugaring is applied only on an *exact* structural match: the length must equal the
-//! decoded string's byte length, the spine must be `Chars`/`Nil` all the way down, and
-//! each `Chars` head must be a single plain character literal. Anything else is left
-//! untouched, because a differently-shaped type that merely shares the `Symbol` or `Chars`
-//! name must not be silently rewritten. This caution applies to every resugaring
-//! post-processor, not just this one.
+//! See cgp-knowledge-base/cargo-cgp/implementation/resugaring.md.
 
 /// Rewrite every well-formed `Symbol<…>` spine in `text` to its `Symbol!("…")` surface
 /// form, returning the rewritten text when any was rewritten (and `None` otherwise). Meant

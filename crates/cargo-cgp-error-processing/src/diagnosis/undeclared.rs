@@ -1,20 +1,6 @@
-//! The rustc-free model and wording for an undeclared-trait failure.
+//! The rustc-free model and wording for an undeclared-trait failure (`[CGP-E030]`).
 //!
-//! `#[cgp_fn]` and `#[cgp_impl]` lower a function into a blanket impl over a generated generic
-//! context, `impl<__Context__> Describe for __Context__ where __Context__: GetName { … }`. The
-//! body may call *other* CGP traits on `self`, or as associated functions on `Self`, but each must
-//! be declared as a dependency (with `#[uses(…)]`) so it becomes a `where` bound on that generic
-//! context. When the body calls a trait the `#[uses]` list omits, the compiler reports a vague
-//! `E0599` ("the method `…` exists for reference `&__Context__`, but its trait bounds were not
-//! satisfied", or "no associated function … found for type parameter `__Context__`"). It names the
-//! generated `__Context__` the programmer never wrote and points at a transitive bound or a
-//! suggestion spliced into the macro attribute, rather than at the real fix: declaring the trait.
-//!
-//! This model records the trait the body used but did not declare, and
-//! [`plan_undeclared_trait`] words it into the `[CGP-E030]` header that replaces the raw
-//! message, with [`undeclared_trait_help`] carrying the `#[uses(…)]` fix. The driver's
-//! `detect::undeclared` module fills the model in from the live `TyCtxt`; keeping the wording here
-//! in owned `String` form makes it unit-testable without a compiler.
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use crate::code::UNDECLARED_TRAIT;
 use crate::diagnosis::wording::quoted_list;

@@ -1,32 +1,8 @@
 //! The CGP error codes stamped on rewritten main messages and dependency-tree entries.
 //!
-//! A CGP error code names one recognized class of CGP mistake. It rides inside the message text as
-//! a `[CGP-Exxx]` prefix (`error[E0277]: [CGP-E001] …`), so the diagnostic's own Rust code
-//! (`E0277`, `E0599`) is always kept: the error is still the compiler's, only restated, and
-//! `rustc --explain` stays meaningful.
-//!
-//! The hundreds digit says where a code appears. A **`CGP-E0xx`** code heads a main message, and
-//! is attached only when `cargo-cgp` both rewrote the main message and identified it as a CGP error
-//! class. The headline codes come in family blocks of ten:
-//!
-//! - `CGP-E001` to `CGP-E009`: a trait the context cannot use, and the two type mismatches;
-//! - `CGP-E010` to `CGP-E019`: conflicting wiring, and structural mistakes;
-//! - `CGP-E020` to `CGP-E029`: wiring that never resolves, and the orphan rule;
-//! - `CGP-E030` to `CGP-E039`: mistakes in what a macro was given;
-//! - `CGP-E040` to `CGP-E049`: wiring keys and values that do not resolve;
-//! - `CGP-E050` to `CGP-E059`: extensible data;
-//! - `CGP-E060` to `CGP-E069`: structural mistakes, continued from `CGP-E015`;
-//! - `CGP-E070` to `CGP-E079`: mistakes in what a macro was given, continued from `CGP-E039`.
-//!
-//! A **`CGP-E1xx`** code labels an entry of the `root cause:` note's dependency tree, one code per
-//! rendering template: `CGP-E101` to `CGP-E109` for the steps of the chain, and `CGP-E110` onward
-//! for the root causes it ends at. The `root cause:` line reuses its cause's code, so the line and
-//! the tree's last entry carry the same one.
-//!
-//! The scheme is the letters `CGP-E` followed by three digits, deliberately unlike rustc's `E0277`,
-//! so the two namespaces never blur. The catalog of what each code means and how to fix it lives in
-//! `cgp-knowledge-base/cargo-cgp/error-code.md`; register a new code there in the same change that
-//! adds its constant here.
+//! Register a new code in the catalog in the same change that adds its constant here. See
+//! cgp-knowledge-base/cargo-cgp/error-code.md for the scheme, the family blocks, and what each code
+//! means.
 
 // A trait the context cannot use, and the two type mismatches (`CGP-E001` to `CGP-E009`).
 

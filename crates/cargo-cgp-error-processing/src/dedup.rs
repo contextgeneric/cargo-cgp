@@ -32,21 +32,8 @@ impl DedupLedger {
     /// Record one transformed diagnostic and report whether an equal one was already recorded:
     /// `true` means this diagnostic is a re-report the caller should suppress.
     ///
-    /// A resolved diagnostic is keyed by its recovered `cause_signature`
-    /// ([`cause_signature`](crate::cause_signature)); a declined-but-rewritten one by
-    /// `text_signature`, its rendered message text, computed lazily, since it is only needed when
-    /// no cause was recovered. A second key is the **coded class headline** (a `[CGP-E0xx]` main
-    /// message), and it works in one direction only: a failure the resolver declined but still
-    /// rewrote falls back to raw `IsProviderFor` scaffolding, yet carries one of the class
-    /// headlines the resolved tree of the same failure records, so a declined report is suppressed
-    /// when a resolved one already recorded its header. A resolved report records every header it
-    /// passes (its class headline, and the provider form a declined re-report may carry instead)
-    /// but never consults them, so a declined fallback that arrived first never hides the resolved
-    /// tree; the emitter drops such a fallback at its flush once a resolved report recorded its
-    /// header ([`records_header`](Self::records_header)). Two resolved reports of one consumer with
-    /// different causes are both kept (the flush coalesces what they share). A header counts only
-    /// with a `[CGP-E0` prefix (a main-message code), so a kept rustc header is never a
-    /// de-duplication key.
+    /// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md for the three keys and why
+    /// the coded headline works in one direction only.
     pub fn check_and_record(
         &mut self,
         cause_signature: Option<&str>,
