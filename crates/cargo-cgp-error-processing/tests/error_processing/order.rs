@@ -5,7 +5,9 @@
 use std::cmp::Ordering;
 
 use cargo_cgp_error_processing::byte_range::ByteRange;
-use cargo_cgp_error_processing::order::{OrderKey, SpanPlace, preferred_first, sort_by_order_key};
+use cargo_cgp_error_processing::order::{
+    OrderKey, SpanPlace, Spanless, preferred_first, sort_by_order_key,
+};
 
 fn key(file: &str, lo: u32, hi: u32, code: Option<&str>, message: &str) -> OrderKey {
     OrderKey {
@@ -173,10 +175,11 @@ fn sorting_keeps_equal_keys_in_their_order() {
         ("second at 4..6", at(4, 6)),
         ("before", at(0, 2)),
     ];
-    let sorted: Vec<&str> = sort_by_order_key(items, |(_, key)| key.clone())
-        .into_iter()
-        .map(|(name, _)| name)
-        .collect();
+    let sorted: Vec<&str> =
+        sort_by_order_key(items, |(_, key)| key.clone(), Spanless::InArrivalOrder)
+            .into_iter()
+            .map(|(name, _)| name)
+            .collect();
     assert_eq!(
         sorted,
         [
@@ -188,6 +191,113 @@ fn sorting_keeps_equal_keys_in_their_order() {
             "summary"
         ]
     );
+}
+
+/// The keys `the_order_is_total_on_small_keys` compares, with three spanless keys that differ in
+/// their code, their message, or their detail.
+fn small_keys() -> Vec<OrderKey> {
+    let mut keys: Vec<OrderKey> = small_spans()
+        .into_iter()
+        .flat_map(|(lo, hi)| {
+            [
+                key("main.rs", lo, hi, Some("E0277"), "m"),
+                with_detail(key("main.rs", lo, hi, Some("E0277"), "m"), &["child"]),
+            ]
+        })
+        .collect();
+    keys.push(spanless(None, "a"));
+    keys.push(spanless(Some("E0277"), "a"));
+    keys.push(with_detail(spanless(Some("E0277"), "a"), &["child"]));
+    keys
+}
+
+// Property: the postcondition of `OrderKey::cmp_by_content`, for all small keys: it agrees with
+//   `cmp` whenever one key has a span, and orders two spanless keys by (code, message, detail).
+#[test]
+fn comparing_by_content_differs_from_cmp_only_between_spanless_keys() {
+    let keys = small_keys();
+    for a in &keys {
+        for b in &keys {
+            let expected = match (&a.place, &b.place) {
+                (None, None) => {
+                    (&a.code, &a.message, &a.detail).cmp(&(&b.code, &b.message, &b.detail))
+                }
+                _ => a.cmp(b),
+            };
+            assert_eq!(a.cmp_by_content(b), expected, "{a:?} {b:?}");
+        }
+    }
+}
+
+// Concern: a comparison that orders spanless keys by content as well could be intransitive across
+//   the spanned and spanless keys, so a sort's result would depend on its input order.
+// Handled: every spanned key comes before every spanless one, and each side is a lexicographic
+//   order.
+// Property: for all small keys, `cmp_by_content` is antisymmetric and transitive.
+#[test]
+fn comparing_by_content_is_total_on_small_keys() {
+    let keys = small_keys();
+    for a in &keys {
+        for b in &keys {
+            assert_eq!(
+                a.cmp_by_content(b),
+                b.cmp_by_content(a).reverse(),
+                "{a:?} {b:?}"
+            );
+            for c in &keys {
+                if a.cmp_by_content(b).is_le() && b.cmp_by_content(c).is_le() {
+                    assert!(a.cmp_by_content(c).is_le(), "{a:?} {b:?} {c:?}");
+                }
+            }
+        }
+    }
+}
+
+/// Every order of `items`.
+fn permutations<T: Clone>(items: &[T]) -> Vec<Vec<T>> {
+    if items.is_empty() {
+        return vec![Vec::new()];
+    }
+    (0..items.len())
+        .flat_map(|i| {
+            let mut rest = items.to_vec();
+            let first = rest.remove(i);
+            permutations(&rest).into_iter().map(move |mut tail| {
+                tail.insert(0, first.clone());
+                tail
+            })
+        })
+        .collect()
+}
+
+// Concern: rustc's threads can emit two diagnostics without a span in either order, and a sort
+//   that keeps such diagnostics in arrival order would then process and print them differently
+//   on each run.
+// Handled: `Spanless::ByContent` orders them by their content.
+// Property: for every arrival order of three spanless items and a spanned one,
+//   `sort_by_order_key` with `Spanless::ByContent` gives one result, the spanned item first and
+//   the spanless ones by code, then message.
+#[test]
+fn sorting_by_content_gives_one_order_for_every_arrival_order() {
+    let items = [
+        ("overflow", spanless(Some("E0275"), "overflow")),
+        ("cycle", spanless(Some("E0391"), "cycle")),
+        ("plain", spanless(None, "unlocated")),
+        ("located", at(4, 6)),
+    ];
+    for arrived in permutations(&items) {
+        let sorted: Vec<&str> =
+            sort_by_order_key(arrived.clone(), |(_, key)| key.clone(), Spanless::ByContent)
+                .into_iter()
+                .map(|(name, _)| name)
+                .collect();
+        let names: Vec<&str> = arrived.iter().map(|(name, _)| *name).collect();
+        assert_eq!(
+            sorted,
+            ["located", "plain", "overflow", "cycle"],
+            "arrived as {names:?}"
+        );
+    }
 }
 
 // Property: the postcondition of `preferred_first`, for every arrangement of two preferred items

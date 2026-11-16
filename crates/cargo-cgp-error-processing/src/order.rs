@@ -26,7 +26,9 @@ pub struct SpanPlace {
 ///
 /// Two keys compare equal when neither diagnostic has a span, whatever their content, so a stable
 /// sort keeps such diagnostics in the order they arrived. rustc's closing lines, such as the "For
-/// more information about this error" footer, carry no span and come in a fixed order.
+/// more information about this error" footer, carry no span and come in a fixed order. A batch
+/// that rustc's threads may have produced in any order is sorted with [`Spanless::ByContent`]
+/// instead, which orders those keys by their content.
 #[derive(Debug, Clone)]
 pub struct OrderKey {
     /// The primary span's place, or `None` for a diagnostic without a span.
@@ -82,6 +84,35 @@ impl PartialEq for OrderKey {
 
 impl Eq for OrderKey {}
 
+impl OrderKey {
+    /// [`Ord::cmp`], except that two keys without a span compare by code, then message, then
+    /// detail, rather than as equal.
+    ///
+    /// Property: for all keys `a` and `b` of which one has a span, `a.cmp_by_content(b) ==
+    /// a.cmp(b)`; for two keys without a span, it is the lexicographic order of `(code, message,
+    /// detail)`.
+    pub fn cmp_by_content(&self, other: &Self) -> Ordering {
+        match (&self.place, &other.place) {
+            (None, None) => self
+                .code
+                .cmp(&other.code)
+                .then_with(|| self.message.cmp(&other.message))
+                .then_with(|| self.detail.cmp(&other.detail)),
+            _ => self.cmp(other),
+        }
+    }
+}
+
+/// How [`sort_by_order_key`] orders the diagnostics without a span.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Spanless {
+    /// In the order they arrived, as rustc's closing lines must stay ([`Ord::cmp`]).
+    InArrivalOrder,
+    /// By their content ([`OrderKey::cmp_by_content`]), for a batch whose arrival order varies
+    /// with rustc's threads.
+    ByContent,
+}
+
 /// `items` with those `preferred` holds for first, each part keeping its order.
 ///
 /// The emitter processes a batch in this order with `preferred` marking the diagnostics at a
@@ -97,16 +128,25 @@ pub fn preferred_first<T>(items: Vec<T>, preferred: impl Fn(&T) -> bool) -> Vec<
     first
 }
 
-/// `items` sorted by the key `key_of` gives each, keeping items with equal keys in their order.
+/// `items` sorted by the key `key_of` gives each, keeping items with equal keys in their order;
+/// `spanless` says how the keys without a span compare.
 ///
-/// Postcondition: the result is a permutation of `items`, sorted by `key_of`, and two items with
-/// equal keys keep their relative order.
-pub fn sort_by_order_key<T>(items: Vec<T>, key_of: impl Fn(&T) -> OrderKey) -> Vec<T> {
+/// Postcondition: the result is a permutation of `items`, sorted by `key_of` under the comparison
+/// `spanless` names, and two items whose keys that comparison makes equal keep their relative
+/// order.
+pub fn sort_by_order_key<T>(
+    items: Vec<T>,
+    key_of: impl Fn(&T) -> OrderKey,
+    spanless: Spanless,
+) -> Vec<T> {
     let mut keyed: Vec<(OrderKey, T)> = items
         .into_iter()
         .map(|item| (key_of(&item), item))
         .collect();
     // `sort_by` is stable, so equal keys keep their order.
-    keyed.sort_by(|a, b| a.0.cmp(&b.0));
+    match spanless {
+        Spanless::InArrivalOrder => keyed.sort_by(|a, b| a.0.cmp(&b.0)),
+        Spanless::ByContent => keyed.sort_by(|a, b| a.0.cmp_by_content(&b.0)),
+    }
     keyed.into_iter().map(|(_, item)| item).collect()
 }

@@ -5,7 +5,7 @@
 //! message, and the rest of the diagnostic's content as the detail that breaks the last tie.
 
 use cargo_cgp_error_processing::byte_range::ByteRange;
-use cargo_cgp_error_processing::order::{OrderKey, SpanPlace, sort_by_order_key};
+use cargo_cgp_error_processing::order::{OrderKey, SpanPlace, Spanless, sort_by_order_key};
 use rustc_errors::{DiagInner, DiagMessage, MultiSpan, Suggestions};
 use rustc_span::Span;
 use rustc_span::source_map::SourceMap;
@@ -28,13 +28,14 @@ pub fn order_key(diag: &DiagInner, source_map: &SourceMap) -> OrderKey {
 }
 
 /// `items` in the canonical order of the diagnostic `diag_of` gives each, items whose diagnostics
-/// tie keeping their order.
+/// tie keeping their order; `spanless` says how the diagnostics without a span compare.
 pub fn sort_canonically<T>(
     items: Vec<T>,
     diag_of: impl Fn(&T) -> &DiagInner,
     source_map: &SourceMap,
+    spanless: Spanless,
 ) -> Vec<T> {
-    sort_by_order_key(items, |item| order_key(diag_of(item), source_map))
+    sort_by_order_key(items, |item| order_key(diag_of(item), source_map), spanless)
 }
 
 /// The place of `span`'s primary span, or `None` when it has none or a dummy one.

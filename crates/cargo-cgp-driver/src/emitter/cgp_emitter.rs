@@ -3,6 +3,7 @@
 use std::path::Path;
 use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
 
+use cargo_cgp_error_processing::order::Spanless;
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{DedupLedger, Origin};
 use rustc_data_structures::marker::DynSend;
@@ -365,13 +366,13 @@ impl<E: Emitter> CgpEmitter<E> {
     /// references the broken component, and each call. A transformed diagnostic whose signature
     /// the ledger has already recorded is such a re-report, so it is suppressed and only the
     /// first occurrence is shown, the first in processing order, which takes a check entry's copy
-    /// first (see [`crate::emitter::deferred`]); the key scheme lives with the [`DedupLedger`]. Only the tool's
-    /// own transformed diagnostics are de-duplicated here; an untouched `rustc` error is merged
-    /// only at the flush, when rustc reports it twice on one line (`merge_repeats`). cargo
-    /// re-counts the diagnostics the emitter produces, so a suppressed re-report drops out of
-    /// its "N errors" summary as well, keeping the count consistent. A resolved failure records
-    /// its class headlines, not the cause it displays, since a declined re-report of the same
-    /// failure is worded with a class sentence.
+    /// first (see [`crate::emitter::deferred`]); the key scheme lives with the [`DedupLedger`].
+    /// Only the tool's own transformed diagnostics are de-duplicated here; an untouched `rustc`
+    /// error is merged only at the flush, when rustc reports it twice on one line
+    /// (`merge_repeats`). cargo re-counts the diagnostics the emitter produces, so a suppressed
+    /// re-report drops out of its "N errors" summary as well, keeping the count consistent. A
+    /// resolved failure records its class headlines, not the cause it displays, since a declined
+    /// re-report of the same failure is worded with a class sentence.
     fn is_repeat_report(
         &mut self,
         diag: &DiagInner,
@@ -548,7 +549,11 @@ impl<E: Emitter> Drop for CgpEmitter<E> {
         // it, and the repeats merged into an earlier block are the same whatever order rustc
         // produced the diagnostics in.
         let buffer = match self.source_map.as_deref() {
-            Some(source_map) => sort_canonically(buffer, BufEntry::diag, source_map),
+            // The diagnostics without a span keep their order: those of `analysis` were sorted by
+            // content in their batch, and rustc's closing lines come last in a fixed order.
+            Some(source_map) => {
+                sort_canonically(buffer, BufEntry::diag, source_map, Spanless::InArrivalOrder)
+            }
             None => buffer,
         };
         let to_emit = render_or_untransformed(

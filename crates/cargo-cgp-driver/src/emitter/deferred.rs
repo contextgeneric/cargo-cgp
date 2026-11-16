@@ -15,7 +15,7 @@ use std::panic::{self, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
-use cargo_cgp_error_processing::order::preferred_first;
+use cargo_cgp_error_processing::order::{Spanless, preferred_first};
 use rustc_data_structures::FatalErrorMarker;
 use rustc_data_structures::marker::DynSend;
 use rustc_errors::DiagInner;
@@ -101,14 +101,15 @@ pub fn override_analysis(_session: &Session, providers: &mut Providers) {
 /// `analysis` ends a failing crate by raising a `FatalErrorMarker` itself once type checking has
 /// reported an error, so the wrapper catches that unwind, transforms the queue while the compiler
 /// is still usable, and resumes it. Each batch is taken in the canonical order
-/// ([`sort_canonically`]), with the diagnostics at a `check_components!` entry moved ahead
-/// ([`preferred_first`]), so the decisions that keep the first of several reports, such as the
-/// de-duplication ledger's, keep a check's copy of a mistake and do not depend on the order rustc's
-/// threads emitted them in. The flush prints in the canonical order again. The emitter
-/// reads the first batch once before transforming any of it ([`DeferredTarget::prepare`]). Any
-/// other unwind is a crash: the panic hook has printed the buffer and the queue already, so it
-/// resumes at once. An unwind out of the processing, such as a fatal error from a query a transform
-/// forced, is resumed in turn once the queue is buffered.
+/// ([`sort_canonically`]), the diagnostics without a span ordered by their content, since rustc's
+/// threads produce them in any order, and the diagnostics at a `check_components!` entry are then
+/// moved ahead ([`preferred_first`]). So the decisions that keep the first of several reports,
+/// such as the de-duplication ledger's, keep a check's copy of a mistake and do not depend on the
+/// order rustc's threads emitted them in. The flush prints in the canonical order again. The
+/// emitter reads the first batch once before transforming any of it
+/// ([`DeferredTarget::prepare`]). Any other unwind is a crash: the panic hook has printed the
+/// buffer and the queue already, so it resumes at once. An unwind out of the processing, such as a
+/// fatal error from a query a transform forced, is resumed in turn once the queue is buffered.
 fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
     let original = *ORIGINAL_ANALYSIS
         .get()
@@ -144,7 +145,7 @@ fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
     };
     let take_ordered = || {
         preferred_first(
-            sort_canonically(take_queued(), |diag| diag, source_map),
+            sort_canonically(take_queued(), |diag| diag, source_map, Spanless::ByContent),
             at_check_entry,
         )
     };
