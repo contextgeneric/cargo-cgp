@@ -4,7 +4,7 @@
 use cargo_cgp_driver::emitter::{order_key, sort_canonically};
 use cargo_cgp_error_processing::byte_range::ByteRange;
 use rustc_errors::codes::E0277;
-use rustc_errors::{DiagInner, Level, MultiSpan};
+use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Subdiag, Sublevel};
 use rustc_span::source_map::{FilePathMapping, SourceMap};
 use rustc_span::{BytePos, DUMMY_SP, FileName, Span, create_default_session_globals_then};
 
@@ -71,5 +71,38 @@ fn sorting_puts_the_inner_report_first_and_the_spanless_last() {
                 r#"Str("spanless")"#
             ]
         );
+    });
+}
+
+/// `diag` with a note child reading `note`.
+fn with_note(mut diag: DiagInner, note: &str) -> DiagInner {
+    diag.children.push(Subdiag {
+        level: Sublevel::Note,
+        messages: vec![(DiagMessage::from(note.to_owned()), Style::NoStyle)],
+        span: MultiSpan::new(),
+    });
+    diag
+}
+
+// Concern: two diagnostics at one span with one code and message, which differ only in a child,
+//   tie on place, code, and message, so under threads their order would follow arrival, as
+//   `merge_repeats` and the flush then would.
+// Handled: `order_key` reads the children into the detail.
+// Property: for all orders of arrival, `sort_canonically` gives such diagnostics in one order.
+#[test]
+fn diagnostics_that_differ_in_a_child_sort_the_same_in_either_arrival_order() {
+    with_two_files(|map, span| {
+        let first = || with_note(error("m", span(8, 17)), "required for `A`");
+        let second = || with_note(error("m", span(8, 17)), "required for `B`");
+        let notes = |sorted: Vec<DiagInner>| -> Vec<String> {
+            sorted
+                .iter()
+                .map(|diag| format!("{:?}", diag.children[0].messages[0].0))
+                .collect()
+        };
+        let one = notes(sort_canonically(vec![first(), second()], |d| d, map));
+        let other = notes(sort_canonically(vec![second(), first()], |d| d, map));
+        assert_eq!(one, other);
+        assert_ne!(order_key(&first(), map), order_key(&second(), map));
     });
 }

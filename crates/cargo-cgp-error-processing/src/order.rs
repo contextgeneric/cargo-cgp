@@ -2,8 +2,8 @@
 //!
 //! rustc type-checks items on several threads, so the order diagnostics arrive in varies between
 //! runs. The emitter therefore processes and prints them in an order that depends only on each
-//! diagnostic: by its primary span, an inner span before the span around it, then by its code and
-//! its message. The driver reads each key off a diagnostic ([`OrderKey`]); the comparison lives
+//! diagnostic: by its primary span, an inner span before the span around it, then by its code, its
+//! message, and the rest of its content. The driver reads each key off a diagnostic ([`OrderKey`]); the comparison lives
 //! here, so it is tested without a compiler.
 
 use std::cmp::Ordering;
@@ -24,8 +24,8 @@ pub struct SpanPlace {
 
 /// A diagnostic's place in the canonical order.
 ///
-/// Two keys compare equal when neither diagnostic has a span, whatever their codes and messages,
-/// so a stable sort keeps such diagnostics in the order they arrived. rustc's closing lines, such
+/// Two keys compare equal when neither diagnostic has a span, whatever their content, so a stable
+/// sort keeps such diagnostics in the order they arrived. rustc's closing lines, such
 /// as the "For more information about this error" footer, carry no span and come in a fixed order.
 #[derive(Debug, Clone)]
 pub struct OrderKey {
@@ -35,12 +35,17 @@ pub struct OrderKey {
     pub code: Option<String>,
     /// The main message.
     pub message: String,
+    /// The rest of the diagnostic's content, each part as a string that holds no global position:
+    /// its span labels, its children, its suggestions, and its message arguments. Two diagnostics
+    /// with a span tie only when they print the same, so their order cannot change the output.
+    pub detail: Vec<String>,
 }
 
 impl Ord for OrderKey {
     /// A diagnostic with a span before one without; then by file name; then an inner span before
     /// an enclosing one and an earlier span before a later one, which ordering by the span's end
-    /// and then by its start, reversed, gives at once; then by code, then by message.
+    /// and then by its start, reversed, gives at once; then by code, then by message, then by
+    /// detail.
     ///
     /// Property: for all spans `a` and `b` in one file, when `b.contains(a)` and `a != b`, the key
     /// at `a` comes first; when `a.hi <= b.lo` and neither contains the other, the key at `a` comes
@@ -56,7 +61,8 @@ impl Ord for OrderKey {
                 .then(a.range.hi.cmp(&b.range.hi))
                 .then(b.range.lo.cmp(&a.range.lo))
                 .then_with(|| self.code.cmp(&other.code))
-                .then_with(|| self.message.cmp(&other.message)),
+                .then_with(|| self.message.cmp(&other.message))
+                .then_with(|| self.detail.cmp(&other.detail)),
         }
     }
 }

@@ -1,6 +1,17 @@
 error[E0207]: the type parameter `U` is not constrained by the impl trait, self type, or predicates
   --> src/main.rs:26:13
    |
+24 | / delegate_components! {
+25 | |     Person {
+26 | |         <T, U> T: Wrap<U>,
+   | |             ^ unconstrained type parameter
+27 | |     }
+28 | | }
+   | |_- help: remove the unused type parameter `U`
+
+error[E0207]: the type parameter `U` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:26:13
+   |
 26 |         <T, U> T: Wrap<U>,
    |             ^ unconstrained type parameter
    |
@@ -11,16 +22,5 @@ help: use the type parameter `U` in the `Person` type and use it in the type def
 24 | delegate_components! {
 25 ~     Person<U> {
    |
-
-error[E0207]: the type parameter `U` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:26:13
-   |
-24 | / delegate_components! {
-25 | |     Person {
-26 | |         <T, U> T: Wrap<U>,
-   | |             ^ unconstrained type parameter
-27 | |     }
-28 | | }
-   | |_- help: remove the unused type parameter `U`
 
 For more information about this error, try `rustc --explain E0207`.

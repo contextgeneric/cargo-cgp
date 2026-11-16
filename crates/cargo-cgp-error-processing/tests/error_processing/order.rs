@@ -15,6 +15,7 @@ fn key(file: &str, lo: u32, hi: u32, code: Option<&str>, message: &str) -> Order
         }),
         code: code.map(str::to_owned),
         message: message.to_owned(),
+        detail: Vec::new(),
     }
 }
 
@@ -27,6 +28,14 @@ fn spanless(code: Option<&str>, message: &str) -> OrderKey {
         place: None,
         code: code.map(str::to_owned),
         message: message.to_owned(),
+        detail: Vec::new(),
+    }
+}
+
+fn with_detail(key: OrderKey, detail: &[&str]) -> OrderKey {
+    OrderKey {
+        detail: detail.iter().map(|part| part.to_string()).collect(),
+        ..key
     }
 }
 
@@ -68,9 +77,9 @@ fn a_span_before_another_comes_first_on_small_spans() {
 // Concern: a comparison built from several tie-breaks could be intransitive, which would let a
 //   sort's result depend on the order of its input.
 // Handled: the comparison is a lexicographic order over (file, end, reversed start, code,
-//   message), with every key lacking a span equal and last.
-// Property: for all keys over small spans, two codes, and a missing span, `cmp` is antisymmetric
-//   and transitive.
+//   message, detail), with every key lacking a span equal and last.
+// Property: for all keys over small spans, two codes, a detail, and a missing span, `cmp` is
+//   antisymmetric and transitive.
 #[test]
 fn the_order_is_total_on_small_keys() {
     let mut keys: Vec<OrderKey> = small_spans()
@@ -79,6 +88,7 @@ fn the_order_is_total_on_small_keys() {
             [
                 key("main.rs", lo, hi, Some("E0271"), "m"),
                 key("main.rs", lo, hi, Some("E0277"), "m"),
+                with_detail(key("main.rs", lo, hi, Some("E0277"), "m"), &["child"]),
             ]
         })
         .collect();
@@ -106,6 +116,33 @@ fn one_span_orders_by_code_then_message() {
     assert_eq!(
         span(Some("E0277"), "a").cmp(&span(Some("E0277"), "a")),
         Ordering::Equal
+    );
+}
+
+// Concern: two diagnostics at one span with one code and message that print differently, such as
+//   two `E0207`s of which one carries the macro's span label, would tie, so a stable sort would
+//   keep them in arrival order, which varies under threads.
+// Handled: the detail, the rest of the diagnostic's content, breaks the tie; it is compared last.
+// Property: for all keys with one place, code, and message, the detail decides, and it never
+//   overrides an earlier field.
+#[test]
+fn the_detail_breaks_a_tie_and_only_a_tie() {
+    let plain = at(3, 9);
+    let labelled = with_detail(at(3, 9), &["label true main.rs:0-9 unconstrained"]);
+    assert!(plain < labelled);
+    assert_ne!(plain, labelled);
+    assert!(with_detail(at(3, 9), &["b"]) > with_detail(at(3, 9), &["a", "z"]));
+    assert!(with_detail(at(3, 9), &["z"]) < with_detail(at(0, 10), &["a"]));
+    assert!(with_detail(key("main.rs", 3, 9, Some("E0277"), "a"), &["z"]) < at(3, 9));
+}
+
+// Property: two keys without a span stay equal whatever their detail, so rustc's closing lines
+//   keep their order.
+#[test]
+fn the_detail_leaves_spanless_keys_equal() {
+    assert_eq!(
+        with_detail(spanless(None, "a"), &["x"]),
+        with_detail(spanless(None, "a"), &["y"])
     );
 }
 
