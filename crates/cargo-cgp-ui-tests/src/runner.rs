@@ -1,16 +1,6 @@
-//! Scheduling fixtures across a pool of workers so they run in parallel.
-//!
-//! Each worker owns one throwaway crate (see [`crate::harness`]), and fixtures are pulled from a
-//! shared cursor so a fast worker keeps taking work rather than waiting on a slow one. The catch
-//! cargo forces on us is that a `cargo` build holds an exclusive lock on its target directory for
-//! the whole build, so two workers can only run at once by building in *separate* target
-//! directories, which per-worker crates give us, at the cost of compiling cgp once per worker.
-//!
-//! Each fixture's result is reported the moment it finishes, through a `done` callback the
-//! runner calls one at a time (never overlapping), so a run streams live rather than
-//! withholding everything to the end. The order is completion order, not fixture order:
-//! whichever worker finishes first reports first, so a caller that needs its output
-//! identifiable prints the fixture's name on every line.
+//! Scheduling fixtures across a pool of workers, each with its own throwaway crate, reporting each
+//! result through a `done` callback in completion order; see
+//! `cgp-knowledge-base/cargo-cgp/implementation/testing.md`.
 
 use std::path::Path;
 use std::sync::Mutex;

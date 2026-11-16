@@ -118,19 +118,9 @@ pub const NO_EXPANSION: &str = "// no expansion: compilation stops before macro 
      // finish, so there is nothing to expand.\n";
 
 /// Compile one fixture through plain `cargo check`, with no `cargo-cgp` or driver, and return its
-/// rendered diagnostics from stderr with its exit status. This records the *original* compiler
-/// output for the fixture, the "before" against which the tool's `.cgp.stderr` is the "after": no
-/// diagnostic rewriting, the default trait solver rather than the driver's
-/// `-Znext-solver=globally`, and none of the `--verbose` un-eliding the driver injects.
-///
-/// It runs rustc's front end on one thread, by appending [`BASELINE_THREADS_FLAG`] to the ambient
-/// `RUSTFLAGS` ([`baseline_rustflags`]), so the baseline records the order a sequential compiler
-/// reports in, whatever thread count the tool's passes run with.
-///
-/// It builds in a separate target directory (`target-rust/`) from the `cargo-cgp` passes, so
-/// the two do not invalidate each other's `cgp` build: cargo's fingerprint includes
-/// `RUSTC_WORKSPACE_WRAPPER`, which `cargo-cgp` sets and plain `cargo` does not, so sharing a
-/// target directory would recompile `cgp` on every alternation.
+/// rendered diagnostics from stderr with its exit status: the baseline the tool's `.cgp.stderr`
+/// improves on, run on one thread through [`baseline_rustflags`] and in its own `target-rust/`
+/// directory. See `cgp-knowledge-base/cargo-cgp/implementation/testing.md`.
 pub fn run_fixture_rust(harness_crate: &Path, fixture: &Path, timeout: Duration) -> Run {
     fs::copy(fixture, harness_crate.join("src/main.rs"))
         .unwrap_or_else(|e| panic!("copying fixture {}: {e}", fixture.display()));
@@ -201,19 +191,9 @@ fn join_flags(base: Option<&str>, extra: Option<&str>) -> String {
         .join(" ")
 }
 
-/// Copy the fixture in as the throwaway crate's `src/main.rs` and run `cargo-cgp` with
-/// the given arguments. Re-copying bumps the file's mtime, which forces cargo to
-/// recompile and re-emit diagnostics even when the same fixture was just built by another
-/// pass.
-///
-/// `env` holds the variables [`tool_env`] gives: the fixture's `//@env:` variables (see
-/// [`crate::directives`]) and the `RUSTFLAGS` that carries the thread count.
-///
-/// `CARGO_CGP_NO_MANAGE` turns off the front-end's provisioning preflight and toolchain
-/// forcing: the harness drives the freshly built driver under the toolchain `cargo test`
-/// already selected, so there is nothing to verify or install. Without it, `cargo cgp
-/// check` would try to confirm a provisioned driver that the source-tree test loop never
-/// installs.
+/// Copy the fixture in as the throwaway crate's `src/main.rs`, which forces cargo to recompile, and
+/// run `cargo-cgp` with the given arguments, under `env` from [`tool_env`] and with
+/// `CARGO_CGP_NO_MANAGE` set; see `cgp-knowledge-base/cargo-cgp/implementation/testing.md`.
 pub fn run_cargo_cgp(
     harness_crate: &Path,
     fixture: &Path,

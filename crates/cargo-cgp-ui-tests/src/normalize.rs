@@ -1,39 +1,7 @@
-//! Normalizing tool output into a portable snapshot.
-//!
-//! Running each fixture through the next-generation trait solver produces the richer
-//! diagnostics cargo-cgp exists to surface, but those diagnostics carry a few
-//! machine-specific details that must not be committed: the absolute path of the sibling
-//! `cgp` checkout (in cross-crate notes), of the throwaway crate, and of the toolchain
-//! sysroot (in a note pointing into the standard library, which carries the user's home
-//! directory, the pinned nightly's name, and the host target triple), plus a note pointing
-//! at a hash-named temp file when a long type is elided. This module rewrites the paths to
-//! stable placeholders and drops the temp-file note, so a snapshot depends only on the
-//! diagnostic content. It applies to the rendered `.stderr` of both the tool pass and the
-//! `cargo check` baseline pass.
-//!
-//! One further source of noise is *non-deterministic* rather than machine-specific, and confined
-//! to the baseline. Plain `cargo check` renders a struct's "other `HasField` impls" suggestion by
-//! spelling each field name as a `Symbol<N, Chars<'a', Chars<'b', …>>>` type-level spine, and
-//! rustc truncates such a spine to `_` at a depth that varies between runs of the *same* compiler
-//! (the diagnostic's "other impls" list uses a trimmed, length-budgeted printer whose cut point
-//! shifts with the non-deterministic order the impls are listed in). [`normalize_baseline`]
-//! therefore rewrites every such spine to a stable `Chars<..>` placeholder. The tool's output is
-//! normalized without that collapse: the tool resugars a field name into `Symbol!("…")`, so a raw
-//! `Chars<…>` spine in its output means the resugaring declined, which a snapshot must show.
-//!
-//! A compiler crash report (from the `robustness/` fixture that makes rustc panic on purpose) names
-//! the panicking thread by its operating-system id, which differs on every run, so [`normalize`]
-//! replaces it with `$TID`. The same report names the host triple rustc was built for
-//! (`x86_64-unknown-linux-gnu` and so on) and the driver's own version, which move when the
-//! snapshot is checked on another machine or the tool gains a version, so [`normalize`] replaces
-//! them with `$HOST` and `$VERSION`. The compiler's own version stays: a toolchain bump is meant
-//! to re-bless a crash snapshot.
-//!
-//! A crash report also repeats the compiler flags, and two of them record how the harness was run
-//! rather than the diagnostic: cargo passes `-C incremental=…` according to the caller's
-//! `CARGO_INCREMENTAL` (the workspace's CI sets it to `0`, while a developer's shell usually leaves
-//! cargo's default on), and the harness's `--threads` mode sets `-Z threads=…`. [`normalize`]
-//! drops both, so a snapshot reads the same in every environment and mode.
+//! Normalizing tool output into a portable snapshot: machine-specific paths, a crash report's
+//! thread id, host, version, and run-dependent flags, and, in the baseline alone, the `Chars<…>`
+//! spines rustc truncates at a varying depth ([`normalize_baseline`]). See
+//! `cgp-knowledge-base/cargo-cgp/implementation/testing.md`.
 
 use std::path::Path;
 

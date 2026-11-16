@@ -1,23 +1,8 @@
-//! Auxiliary-crate support for fixtures, modeled on Clippy's `aux-build`.
-//!
-//! A single throwaway crate cannot express a cross-crate scenario, since the orphan
-//! rule and cross-crate coherence only exist *between* crates. A fixture that
-//! needs a companion crate declares it with a header directive:
-//!
-//! ```text
-//! //@aux-build: cgp-test-crate-a
-//! ```
-//!
-//! The named crate's source lives under [`auxiliary/`](crate::paths::auxiliary_src_dir);
-//! its manifest there is a template whose `cgp` dependency is the placeholder
-//! `CGP_PLACEHOLDER`. Before a run the harness [materializes](materialize_all)
-//! every stored auxiliary crate once, copying its `src/` and writing a manifest
-//! with the placeholder replaced by the sibling `cgp` checkout the rest of the
-//! harness already resolves, into [`aux_build_root`].
-//! A fixture's directly-declared crates are then added as path dependencies of the
-//! worker crate; a transitive aux dependency (one aux crate's `../other` path) is
-//! pulled in by cargo through the materialized sibling, so only direct declarations
-//! need listing.
+//! Auxiliary-crate support for fixtures, modeled on Clippy's `aux-build`: a fixture's
+//! `//@aux-build: <crate>` directive builds a crate from
+//! [`auxiliary/`](crate::paths::auxiliary_src_dir), [materialized](materialize_all) once per run
+//! into [`aux_build_root`], and adds it as a dependency. See
+//! `cgp-knowledge-base/cargo-cgp/implementation/testing.md`.
 
 use std::fs;
 use std::path::{Path, PathBuf};

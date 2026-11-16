@@ -1,29 +1,6 @@
-//! The `//@` header directives a fixture carries, modeled on Clippy's `//@` annotations.
-//!
-//! A directive is an ordinary line comment, so the compiler ignores it when the fixture is copied
-//! in as `main.rs`; only the harness reads it. The recognized directives are:
-//!
-//! - `//@aux-build: <crate>`: build an auxiliary crate and add it as a dependency (see
-//!   [`crate::aux`]).
-//! - `//@rewrites-falsely: <reason>`: a `pass-through/` fixture whose tool output still differs
-//!   from plain rustc's, so its snapshots pin today's output instead of the equality check.
-//! - `//@varies-under-threads: <reason>`: a fixture whose own compiler output rustc varies between
-//!   runs when its front end runs on several threads, so a run under `--threads` other than one
-//!   skips the tool's snapshot comparisons for it and keeps its checks.
-//! - `//@json`: also run the JSON pass, pinning the diagnostics an editor reads.
-//! - `//@env: <KEY>=<VALUE>`: set an environment variable for the tool's runs (the check, JSON,
-//!   and expand passes); a fixture may declare several.
-//! - `//@codes: <CGP-Exxx ...>` (or `//@codes: none`): the exact set of `[CGP-Exxx]` codes the
-//!   tool's output carries, checked against it.
-//! - `//@quality: acceptable|usability|hidden`: how well the tool presents the error today:
-//!   the cause is presented well, present but buried, or absent from the output.
-//!
-//! A misspelled directive would be a silent no-op, so an unknown `//@name` is rejected, and so is a
-//! known name written in another comment form (`// @aux-build:` with a space, or `//! @json`): a
-//! stray space after `//` is the mistake that has actually happened. A comment that merely starts
-//! with an `@`-path, such as commented-out wiring, stays legal. A directive that holds one value
-//! (`//@codes:`, `//@quality:`, `//@rewrites-falsely:`, `//@varies-under-threads:`) is rejected
-//! when declared twice, since the second would silently replace the first.
+//! The `//@` header directives a fixture carries, modeled on Clippy's `//@` annotations, with an
+//! unknown or doubled directive rejected; see
+//! `cgp-knowledge-base/cargo-cgp/implementation/testing.md` for each directive.
 
 use std::fs;
 use std::path::Path;
