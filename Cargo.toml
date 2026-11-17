@@ -36,18 +36,18 @@ rust_2018_idioms = { level = "warn", priority = -1 }
 unused_qualifications = "warn"
 
 [workspace.dependencies]
-anyhow = { version = "1" }
+anyhow = { version = "1.0.104" }
 # Semantic-version parsing/comparison, used by `cargo cgp update` to choose the version it
 # moves to: a stable install stays on stable releases, and a pre-release install moves to
 # the newest newer version, pre-release or stable.
-semver = { version = "1" }
+semver = { version = "1.0.28" }
 # Blocking HTTP client, used by `cargo cgp update` to read the crates.io sparse index (all
 # published versions) so it can pick the version an update moves to.
 # rustls TLS keeps it self-contained. Only the front-end's `update` path links it; the
 # check path and the driver do not. (ureq is a widely used, dependency-light client.)
-ureq = { version = "3" }
+ureq = { version = "3.5.2" }
 # JSON parsing of the sparse-index lines. Ubiquitous and dependency-light.
-serde_json = { version = "1" }
+serde_json = { version = "1.0.154" }
 # The rustc-free error-processing library the driver drives, whose spelling rules the expand crate
 # also calls. An ordinary crate that does not touch `rustc_private`, so it builds and its tests run
 # on any toolchain.
@@ -60,14 +60,14 @@ cargo-cgp-expand = { version = "0.1.0-prerelease", path = "crates/cargo-cgp-expa
 # The parser, printer, and token plumbing the resugaring works over. `syn` gives it a parsed
 # syntax tree to match on, which is what keeps the passes immune to how the compiler's printer
 # broke a long type across lines; `prettyplease` prints the result, as `cargo-expand` does.
-syn = { version = "2", features = ["full", "visit-mut", "parsing", "printing", "clone-impls"] }
-quote = { version = "1" }
-proc-macro2 = { version = "1" }
-prettyplease = { version = "0.2" }
+syn = { version = "2.0.119", features = ["full", "visit-mut", "parsing", "printing", "clone-impls"] }
+quote = { version = "1.0.47" }
+proc-macro2 = { version = "1.0.107" }
+prettyplease = { version = "0.2.37" }
 # Renders the transitive dependency chain of a resolved check failure as a `cargo tree`-style
 # tree in the replacement diagnostic. Tiny and dependency-free, so it does not weigh down the
 # rustc-free error-processing crate that hosts the pure renderer.
 termtree = { version = "1" }
 # Inline-snapshot testing for the pure dependency-graph rendering unit tests, so a rendered tree
 # is pinned as a literal in the test source (matching the `cgp` workspace's use of insta).
-insta = { version = "1" }
+insta = { version = "1.49.0" }
