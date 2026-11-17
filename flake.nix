@@ -51,10 +51,11 @@
 
         # Only the files the build actually reads, so the derivation's input hash, and
         # thus a rebuild, turns solely on the crate sources, the manifests, the lockfile,
-        # the pinned-toolchain file the `build.rs` scripts consume, and the `LICENSE` each
-        # published crate links to (so the links do not dangle). Editing a
-        # `tests/ui` fixture, `README.md`, or `AGENTS.md` leaves the source unchanged and
-        # the built binaries cached. `crates/` is taken whole (it is small and all of it is
+        # the pinned-toolchain file the `build.rs` scripts consume, and the `LICENSE` and
+        # root `README.md` the published crates link to: the `cargo-cgp` crate's README,
+        # its crate doc through `include_str!`, is a link to the root one. Editing a
+        # `tests/ui` fixture or `AGENTS.md` leaves the source unchanged and the built
+        # binaries cached. `crates/` is taken whole (it is small and all of it is
         # build input, including each workspace member's manifest that cargo must parse);
         # the churny, build-irrelevant directories sit at the repository root and are simply
         # not listed.
@@ -65,6 +66,7 @@
             ./Cargo.lock
             ./rust-toolchain.toml
             ./LICENSE
+            ./README.md
             ./crates
           ];
         };
