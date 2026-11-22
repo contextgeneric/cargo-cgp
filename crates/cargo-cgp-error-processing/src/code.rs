@@ -4,7 +4,7 @@
 //! `cgp-knowledge-base/cargo-cgp/error-code.md` for the scheme, the family blocks, and what each
 //! code means.
 
-// A trait the context cannot use, and the two type mismatches (`CGP-E001` to `CGP-E009`).
+// A trait the context cannot use (`CGP-E001` to `CGP-E009`).
 
 /// `CGP-E001`: the consumer trait behind a component is not implemented for the context. Stamped on
 /// a resolved failure whose anchor recovered a CGP consumer trait (a check entry, a consumer-method
@@ -83,7 +83,7 @@ pub const GENERIC_DEFAULT_IMPL: &str = "CGP-E018";
 /// the `E0207` each parameter produces in the impls the entry lowers to.
 pub const ENTRY_PARAMETERS_NOT_IN_KEY: &str = "CGP-E019";
 
-// Wiring that never resolves, and the orphan rule (`CGP-E020` to `CGP-E029`).
+// Endless lookups and the orphan rule (`CGP-E020` to `CGP-E029`).
 
 /// `CGP-E020`: resolving a component's wiring leads back to itself. Stamped on an `E0275` overflow
 /// at a check entry (on a `CanUseComponent` bound) or a consumer-method call (on the consumer
@@ -100,7 +100,7 @@ pub const GROWING_LOOKUP: &str = "CGP-E021";
 /// key.
 pub const ORPHAN_FOREIGN_NAMESPACE: &str = "CGP-E022";
 
-// Mistakes in what a macro was given (`CGP-E030` to `CGP-E039`).
+// Macro input mistakes (`CGP-E030` to `CGP-E039`).
 
 /// `CGP-E030`: a CGP trait's method is called in a `#[cgp_fn]` or `#[cgp_impl]` body, but the
 /// trait is not declared as a dependency with `#[uses(…)]`. The Rust code stays `E0599`.
@@ -147,7 +147,7 @@ pub const CGP_IMPL_PROVIDER_NOT_DECLARED: &str = "CGP-E038";
 /// provider trait's own supertrait. The Rust code stays `E0277`.
 pub const PROVIDER_IMPL_WITHOUT_MACRO: &str = "CGP-E039";
 
-// Wiring keys and values that do not resolve (`CGP-E040` to `CGP-E049`).
+// Unresolved wiring names (`CGP-E040` to `CGP-E049`).
 
 /// `CGP-E040`: a wiring key names a consumer trait where its component belongs. The Rust code stays
 /// `E0782`.
@@ -178,7 +178,7 @@ pub const PATH_TYPE_NOT_DECLARED: &str = "CGP-E044";
 /// The headline states that cause. The Rust code stays whatever rustc assigned.
 pub const DATA_OPERATION_UNIMPLEMENTED: &str = "CGP-E050";
 
-// Structural mistakes, continued (`CGP-E060` to `CGP-E069`): the family outgrew `CGP-E015` to
+// Structural mistakes (`CGP-E060` to `CGP-E069`): the family outgrew `CGP-E015` to
 // `CGP-E019`, and `CGP-E050` to `CGP-E059` holds extensible data.
 
 /// `CGP-E060`: a check entry names no parameters for a component that takes some, so it checks the
@@ -189,7 +189,7 @@ pub const CHECK_AT_UNIT_PARAMETERS: &str = "CGP-E060";
 /// macro generates the method's helper and computer twice. The Rust code stays `E0428`.
 pub const SHARED_DISPATCH_METHOD: &str = "CGP-E061";
 
-// Mistakes in what a macro was given, continued (`CGP-E070` to `CGP-E079`): `CGP-E030` to
+// More macro input mistakes (`CGP-E070` to `CGP-E079`): `CGP-E030` to
 // `CGP-E039` are all taken.
 
 /// `CGP-E070`: a `#[cgp_impl]` or `#[cgp_provider]` header derives its component from the provider
